@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1b2a1c">
+  <title>Hobbit Land</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Hobbit Land">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&display=swap">
+  <!-- When any file below changes, change the ?v= tag on all of them so browsers fetch the new copies. -->
+  <link rel="stylesheet" href="styles.css?v=2026-11-17d">
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <!-- ============ SETUP SCREEN ============ -->
+  <main id="setup" class="screen active">
+    <div class="setup-scroll">
+      <header class="hero">
+        <svg class="logo" viewBox="-50 -50 100 100" aria-hidden="true">
+          <defs>
+            <radialGradient id="logo-glow"><stop offset="0" stop-color="#ffcf5a" stop-opacity=".55"/><stop offset="1" stop-color="#ffcf5a" stop-opacity="0"/></radialGradient>
+            <linearGradient id="logo-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1a8"/><stop offset=".45" stop-color="#e8b43a"/><stop offset="1" stop-color="#a8701c"/></linearGradient>
+          </defs>
+          <circle r="48" fill="url(#logo-glow)"/>
+          <ellipse cx="0" cy="0" rx="28" ry="24" fill="none" stroke="url(#logo-gold)" stroke-width="10"/>
+          <ellipse cx="-6" cy="-10" rx="10" ry="4" fill="#fffbe0" opacity=".5" transform="rotate(-30)"/>
+        </svg>
+        <h1>Hobbit Land</h1>
+        <p>Roll the die and carry the Ring from the Shire to Mount Doom. Land on a card space and turn over a card. Land exactly on a fork and you may find a shortcut.</p>
+      </header>
+
+      <section class="panel" aria-labelledby="h-players">
+        <div class="panel-head">
+          <h2 id="h-players">Players</h2>
+          <div class="segmented" id="player-count" role="radiogroup" aria-label="Number of players"></div>
+        </div>
+        <div class="seats" id="seats"></div>
+        <p class="hint">Each player chooses a hobbit. Set any player to Computer to have the game play that hobbit.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="h-length">
+        <div class="panel-head">
+          <h2 id="h-length">Road length</h2>
+          <div class="segmented" id="road-length" role="radiogroup" aria-label="Road length"></div>
+        </div>
+      </section>
+
+      <section class="panel how" aria-labelledby="h-how">
+        <div class="panel-head"><h2 id="h-how">How to play</h2></div>
+        <ol>
+          <li>On your turn, press <b>Roll</b>. Your hobbit walks that many spaces along the road.</li>
+          <li>If you stop on a <span class="chip card">card space</span>, a card is turned over. It may send you forward, send you back, or keep you where you are. Press <b>Continue</b> and your hobbit moves. That move never turns over another card.</li>
+          <li>If you stop exactly on a <span class="chip fork">fork</span>, your next move takes the shortcut. Pass a fork without stopping and you stay on the long road.</li>
+          <li>Stop on a <span class="chip rest">resting place</span> (Bree, Rivendell or Lothlórien) and you get <b>+1</b> on your next roll.</li>
+          <li>About one card in fifteen is a <b>rare card</b>: the Eagles carry you 5 spaces, you swap places with another hobbit, or Gollum steals your next turn.</li>
+          <li>Reach Mount Doom first to win. Play goes on until every place is decided.</li>
+        </ol>
+        <p class="hint">The card spaces and the scenery change every game.</p>
+      </section>
+    </div>
+
+    <footer class="setup-footer">
+      <div class="summary" id="summary"></div>
+      <button class="btn primary big" id="start-btn" type="button">Start game</button>
+    </footer>
+  </main>
+
+  <!-- ============ GAME SCREEN ============ -->
+  <main id="game" class="screen">
+    <header class="topbar">
+      <div class="brand"><span class="brand-ring" aria-hidden="true"></span><span class="brand-name">Hobbit Land</span></div>
+      <div class="status" id="status" aria-live="polite"></div>
+      <div class="controls">
+        <button class="icon-btn" id="sound-btn" type="button" aria-label="Sound on" title="Sound">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/><path class="mute" d="M17 9l5 6M22 9l-5 6"/></svg>
+        </button>
+        <button class="icon-btn" id="fs-btn" type="button" aria-label="Full screen" title="Full screen">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>
+        </button>
+        <button class="btn ghost" id="restart-btn" type="button">Restart</button>
+        <button class="btn ghost" id="menu-btn" type="button">Settings</button>
+      </div>
+    </header>
+
+    <section class="board-wrap" id="board-wrap">
+      <div class="stage" id="stage">
+        <svg id="board" viewBox="0 0 1600 920" role="img" aria-label="The road from the Shire to Mount Doom">
+          <defs>
+            <radialGradient id="mist-grad"><stop offset="0" stop-color="#eef3f2" stop-opacity=".8"/><stop offset="1" stop-color="#eef3f2" stop-opacity="0"/></radialGradient>
+          </defs>
+          <g id="l-terrain"></g>
+          <g id="l-scenery"></g>
+          <g id="l-landmarks"></g>
+          <g id="l-road"></g>
+          <g id="l-labels"></g>
+          <g id="l-critters"></g>
+          <g id="l-spaces"></g>
+          <g id="l-fx-under"></g>
+          <g id="l-tokens"></g>
+          <g id="l-fx"></g>
+          <g id="l-sky"></g>
+          <g id="l-weather"></g>
+          <rect id="l-tint" x="0" y="0" width="1600" height="920" pointer-events="none"/>
+        </svg>
+      </div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </section>
+
+    <footer class="bottombar">
+      <section class="players" id="players" aria-label="Players"></section>
+      <div class="dice-tray">
+        <div class="die-wrap" id="die-wrap" aria-hidden="true">
+          <div class="die" id="die">
+            <div class="face f1"><i></i></div>
+            <div class="face f2"><i></i><i></i></div>
+            <div class="face f3"><i></i><i></i><i></i></div>
+            <div class="face f4"><i></i><i></i><i></i><i></i></div>
+            <div class="face f5"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="face f6"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+        </div>
+        <button class="btn primary roll" id="roll-btn" type="button">Roll</button>
+      </div>
+    </footer>
+  </main>
+
+  <div class="modal-layer" id="modal-layer" hidden>
+    <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"></div>
+  </div>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+
+  <script src="hobbits.js?v=2026-11-17c"></script>
+  <script src="cards.js?v=2026-11-17c"></script>
+  <script src="board.js?v=2026-11-17c"></script>
+  <script src="game.js?v=2026-11-17c"></script>
+</body>
+</html>
