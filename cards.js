@@ -15,7 +15,7 @@
   'use strict';
 
   // How often each kind of card turns up (the numbers are relative, not percentages).
-  const KIND_WEIGHTS = { forward: 40, back: 35, stay: 25 };
+  const KIND_WEIGHTS = { forward: 45, back: 30, stay: 25 };
 
   // How many spaces a forward or back card moves: 1 is most likely, 3 is rare.
   const STEP_WEIGHTS = { 1: 5, 2: 3, 3: 2 };
