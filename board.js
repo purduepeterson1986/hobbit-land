@@ -317,12 +317,12 @@
     const season = SEASONS[pick(Object.keys(SEASONS))];
     const time = TIMES[pick(Object.keys(TIMES))];
 
-    // Which spaces turn over a card this game: about half of the ordinary spaces.
+    // Which spaces turn over a card this game: about 40% of the ordinary spaces.
     const eligible = nodes.filter((n) => (n.kind === 'path' || n.kind === 'landmark') && !n.rest);
     eligible.forEach((n) => { n.card = false; });
     const order = eligible.slice();
     for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
-    order.slice(0, Math.round(eligible.length * (opts.cardShare == null ? 0.5 : opts.cardShare))).forEach((n) => { n.card = true; });
+    order.slice(0, Math.round(eligible.length * (opts.cardShare == null ? 0.4 : opts.cardShare))).forEach((n) => { n.card = true; });
 
     // Everything is placed away from the road and from the landmark drawings.
     const roadPts = [];

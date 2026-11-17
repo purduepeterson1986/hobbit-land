@@ -104,6 +104,10 @@ h1, h2, p { margin: 0; }
 .icon-btn.off .wave { display: none; }
 .icon-btn.off .mute { display: block; }
 .icon-btn.off { color: var(--ink-faint); }
+.icon-btn .pip { fill: currentColor; stroke: none; }
+.trophy-all { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-bottom: 6px; }
+.trophy-all svg { width: 64px; height: 64px; }
+.cpu-tag {font-size: .8em; font-weight: 400; font-style: italic; letter-spacing: .02em; opacity: .55; }
 [hidden] { display: none !important; }
 
 /* ================= Setup ================= */

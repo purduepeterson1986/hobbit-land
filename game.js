@@ -21,6 +21,7 @@
     types: ['human', 'human', 'cpu', 'cpu'],
     length: 'normal',   // road length: short, normal or long
     sound: true,
+    diceSound: true,    // the dice rolling sound on its own
     autoTap: false,     // computer players tap Continue on their own
     autoSecs: 5         // how long a computer's card stays up before that (2, 5 or 10)
   };
@@ -37,6 +38,7 @@
       if (Array.isArray(saved.types)) saved.types.slice(0, 4).forEach((t, i) => { settings.types[i] = t === 'cpu' ? 'cpu' : 'human'; });
       if (LENGTH_IDS.includes(saved.length)) settings.length = saved.length;
       if (typeof saved.sound === 'boolean') settings.sound = saved.sound;
+      if (typeof saved.diceSound === 'boolean') settings.diceSound = saved.diceSound;
       if (typeof saved.autoTap === 'boolean') settings.autoTap = saved.autoTap;
       if ([2, 5, 10].includes(saved.autoSecs)) settings.autoSecs = saved.autoSecs;
     }
@@ -99,7 +101,7 @@
       src.start(t);
     },
     click() { this.tone(620, 0, 0.08, 'triangle', 0.08, 400); },
-    dice() { for (let i = 0; i < 8; i++) this.noise(i * 0.075 + Math.random() * 0.02, 0.045, 0.35, 1400 + Math.random() * 1600); this.noise(0.7, 0.08, 0.4, 900); },
+    dice() { for (let i = 0; i < 8; i++) this.noise(i * 0.075 + Math.random() * 0.02, 0.045, 0.175, 1400 + Math.random() * 1600); this.noise(0.7, 0.08, 0.2, 900); },
     step(back) { this.tone(back ? 300 : 360 + Math.random() * 50, 0, 0.08, 'triangle', 0.06, back ? 220 : 260); },
     card() { this.noise(0, 0.18, 0.25, 3200); this.tone(700, 0.05, 0.12, 'sine', 0.05, 900); },
     good() { [523, 659, 784, 1047].forEach((f, i) => this.tone(f, i * 0.08, 0.3, 'sine', 0.11)); },
@@ -387,7 +389,7 @@
   }
   function drawToken(p) {
     p.el.setAttribute('transform', 'translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ')');
-    p.liftEl.setAttribute('transform', 'translate(0,' + (-p.h0).toFixed(1) + ') scale(' + p.sx.toFixed(3) + ',' + p.sy.toFixed(3) + ')');
+    p.liftEl.setAttribute('transform', 'translate(0,' + (-p.h0).toFixed(1) + ') rotate(' + (p.rot || 0).toFixed(1) + ') scale(' + p.sx.toFixed(3) + ',' + p.sy.toFixed(3) + ')');
     p.faceEl.setAttribute('transform', 'scale(' + p.dir + ',1)');
     const k = 1 - Math.min(0.5, p.h0 / 60);
     p.shadowEl.setAttribute('transform', 'scale(' + k.toFixed(3) + ')');
@@ -1041,6 +1043,76 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
     guard(g);
     updatePlayers();
   }
+  // After a hobbit's place is announced at Mount Doom, an eagle swoops down and carries them back to Bag End.
+  async function eagleBack(p, g) {
+    const start = geo.start;
+    if (p.node === start) return;
+    toast('An eagle swoops down and carries ' + p.name + ' back to Bag End.', p.h.color, 2400);
+    eagleFly(p.x + 240, p.y - 380, p.x + 90, p.y - 150, p.x, p.y - 80, 1.1, 1);
+    await sleep(900);
+    guard(g);
+    p.active = true;
+    sortTokens();
+    settleLater(p.node, p);
+    await flyAlong(p, [start], 70, 2200, true);
+    guard(g);
+    p.trail.push(start);
+    p.node = start;
+    landFx(p, false);
+    p.active = false;
+    await settle(p.node, null, 200);
+    guard(g);
+    updatePlayers();
+  }
+  // When a hobbit's final landing shares a space with another hobbit still on the road, they have a scuffle. No words.
+  // Adapted from the Merry and Pippin fight in the Middle Earth game: the two tumble round each other, bump, then both flop over and get up.
+  function brawl(p, g) {
+    const q = players.find((o) => o !== p && !o.place && o.node === p.node);
+    if (!q || p.place || reduceMotion()) return Promise.resolve();
+    const f = [p, q], dirs = [p.dir, q.dir];
+    const cx = (p.x + q.x) / 2, cy = (p.y + q.y) / 2;
+    const LOOP = 2.2, FLOP = 0.8, TOTAL = LOOP + FLOP;
+    p.active = q.active = true;
+    sortTokens();
+    let last = performance.now(), t = 0, nextPuff = 0;
+    return new Promise((res) => {
+      const step = (now) => {
+        const dt = Math.min(0.05, (now - last) / 1000);
+        last = now; t += dt;
+        if (t < LOOP) {
+          // tumbling round each other, spinning in opposite directions
+          const e = Math.min(1, t / 0.3);
+          f.forEach((h, i) => {
+            const ang = t * 7 + (i ? Math.PI : 0), rad = (11 + 4 * Math.sin(t * 3)) * e;
+            h.x = cx + Math.cos(ang) * rad;
+            h.y = cy + Math.sin(ang) * rad * 0.4;
+            h.dir = Math.cos(ang) > 0 ? -1 : 1;
+            h.rot = (i ? -1 : 1) * t * 380;
+            h.h0 = Math.abs(Math.sin(t * 9 + i * 1.7)) * 8;
+            h.sx = 1; h.sy = 1;
+          });
+          if (t >= nextPuff) {
+            nextPuff = t + 0.4;
+            Sound.pop();
+            dust(cx + (Math.random() - 0.5) * 16, cy);
+            sparkle(cx + (Math.random() - 0.5) * 16, cy - 14, '#ffe27a', 8);
+          }
+        } else {
+          // both flop over, then get back up
+          const u = (t - LOOP) / FLOP;
+          const s = Math.min(1, Math.sin(Math.PI * Math.min(1, u)) * 1.6);
+          if (u < 0.05 && !f[0].flopped) { f[0].flopped = true; Sound.pop(); dust(cx, cy); }
+          f.forEach((h, i) => { h.rot = (i ? -90 : 90) * s; h.h0 = 0; h.sx = 1; h.sy = 1; });
+        }
+        f.forEach(drawToken);
+        if (t < TOTAL) return requestAnimationFrame(step);
+        f.forEach((h, i) => { h.dir = dirs[i]; h.rot = 0; h.h0 = 0; h.sx = 1; h.sy = 1; delete h.flopped; });
+        p.active = q.active = false;
+        settle(p.node, null, 300).then(res);
+      };
+      requestAnimationFrame(step);
+    });
+  }
   async function swapPlaces(p, q, g) {
     const pn = p.node, qn = q.node;
     [p.trail, q.trail] = [q.trail, p.trail];
@@ -1066,7 +1138,7 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
     return base + ((((target - base) % 360) + 360) % 360);
   }
   function rollDie(v) {
-    Sound.dice();
+    if (settings.diceSound) Sound.dice();
     const [tx, ty] = FACE_ROT[v];
     dieRot.x = spinTo(dieRot.x, tx, 720);
     dieRot.y = spinTo(dieRot.y, ty, 360);
@@ -1170,6 +1242,8 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
       await move(p, v + bonus, g);
       await afterLanding(p, g, true);
       guard(g);
+      await brawl(p, g);
+      guard(g);
       endTurn();
     } catch (e) {
       if (e !== CANCEL) throw e;
@@ -1272,8 +1346,9 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
     const msg = p.place === 1 ? p.name + ' reached Mount Doom first and destroyed the Ring!' : p.name + ' reached Mount Doom: ' + ORDINALS[p.place - 1] + ' place!';
     toast(msg, p.h.color, 2800);
     setStatus(p, 'reached <b>Mount Doom</b>, ' + ORDINALS[p.place - 1] + ' place');
-    await pause(2600);
+    await pause(4600);
     guard(g);
+    await eagleBack(p, g);
   }
 
   function setBadge(p) {
@@ -1285,8 +1360,8 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
   function endTurn() {
     if (!playing) return;
     const left = players.filter((p) => !p.place);
-    if (left.length <= 1) {
-      if (left.length === 1) { placesGiven++; left[0].place = placesGiven; setBadge(left[0]); }
+    // The last hobbit keeps walking until they reach Mount Doom and get their place too.
+    if (left.length === 0) {
       playing = false;
       updatePlayers();
       const g = gen;
@@ -1318,7 +1393,7 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
       el.classList.toggle('active', active);
       el.classList.toggle('done', !!p.place);
       const n = NODES[p.node];
-      $('.pwhere', el).textContent = p.place ? (n.kind === 'finish' ? 'Reached Mount Doom' : ORDINALS[p.place - 1] + ' place') : n.place + (p.cpu ? ' · Computer' : '');
+      $('.pwhere', el).innerHTML = p.place ? (n.kind === 'finish' ? 'Reached Mount Doom' : ORDINALS[p.place - 1] + ' place') : esc(n.place) + (p.cpu ? ' <span class="cpu-tag">· Computer</span>' : '');
       $('.pplace', el).textContent = p.place ? ' ' + MEDALS[p.place - 1] : '';
       // badges: a rest bonus waiting to be used, a shortcut ready to take, or a turn Gollum has stolen
       const onFork = !p.place && !!NODES[p.node].fork;
@@ -1368,7 +1443,8 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
     elToast.textContent = text;
     elToast.style.setProperty('--tc', color || '#fff');
     elToast.classList.add('show');
-    toastTimer = setTimeout(() => elToast.classList.remove('show'), ms || 1600);
+    // Every message stays up two seconds longer than its base time.
+    toastTimer = setTimeout(() => elToast.classList.remove('show'), (ms || 1600) + 2000);
   }
 
   /* ---------- the card ---------- */
@@ -1431,8 +1507,8 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
     Sound.win();
     startConfetti([winner.h.color, '#f6c453']);
     openModal(
-      '<div class="trophy">' + HB.portrait(winner.h, 'trophy-face') + '</div>' +
-      '<h2 id="modal-title">' + esc(winner.name) + ' wins!</h2>' +
+      '<div class="trophy-all">' + players.map((p) => HB.portrait(p.h, 'avatar')).join('') + '</div>' +
+      '<h2 id="modal-title">Good game!</h2>' +
       '<p class="sub">' + esc(winner.name) + ' carried the Ring all the way to Mount Doom.</p>' +
       '<p class="series">Wins in this run (' + series.games + (series.games === 1 ? ' game' : ' games') + '): ' + standings + '</p>' +
       '<div class="ranks">' + rows + '</div>',
@@ -1508,6 +1584,20 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
     if (settings.sound) Sound.good();
   });
   refreshSound();
+
+  const diceBtn = $('#dice-btn');
+  function refreshDice() {
+    diceBtn.classList.toggle('off', !settings.diceSound);
+    diceBtn.setAttribute('aria-label', settings.diceSound ? 'Dice sound on' : 'Dice sound off');
+    diceBtn.setAttribute('title', settings.diceSound ? 'Dice sound on' : 'Dice sound off');
+    diceBtn.setAttribute('aria-pressed', String(settings.diceSound));
+  }
+  diceBtn.addEventListener('click', () => {
+    settings.diceSound = !settings.diceSound;
+    refreshDice(); save();
+    if (settings.diceSound) Sound.dice();
+  });
+  refreshDice();
 
   const fsBtn = $('#fs-btn');
   const root = document.documentElement;

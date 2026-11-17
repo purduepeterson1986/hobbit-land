@@ -31,7 +31,7 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
 
 ## Every game is different
 
-- About half of the ordinary spaces are card spaces, chosen at random each game.
+- About 40% of the ordinary spaces are card spaces, chosen at random each game.
 - Each card is made up when it is turned over: forward, back or stay, and how many spaces.
 - The scenery is rearranged each game: trees, rocks, sheep, horses, clouds and birds move around, and the season (spring, summer or autumn) and time of day (morning, midday or evening) change.
 - During play, flocks of birds now and then fly across the map.
@@ -44,7 +44,7 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
 
 - **Players:** 2, 3 or 4, each a Person or the Computer. Picking a hobbit another player already has swaps the two.
 - **Road length:** Short, Normal or Long (see the table above).
-- **Computer cards:** off by default, so a card on a computer's turn waits for someone to press Continue. Turn it **On** and choose how long each card stays up (2, 5 or 10 seconds) before Continue is tapped automatically. This applies to computer players only; people always press Continue themselves.
+- **Auto-tap Computer Cards:** off by default, so a card on a computer's turn waits for someone to press Continue. Turn it **On** and choose how long each card stays up (2, 5 or 10 seconds) before Continue is tapped automatically. This applies to computer players only; people always press Continue themselves.
 - Settings are remembered between visits. Win counts are kept while you press **Next game**, and start again when you go back to the settings.
 
 ## Changing the cards
