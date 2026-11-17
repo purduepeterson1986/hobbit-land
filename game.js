@@ -20,7 +20,9 @@
     hobbits: ['frodo', 'sam', 'merry', 'pippin'],   // which hobbit each seat plays (always all four, in some order)
     types: ['human', 'human', 'cpu', 'cpu'],
     length: 'normal',   // road length: short, normal or long
-    sound: true
+    sound: true,
+    autoTap: false,     // computer players tap Continue on their own
+    autoSecs: 5         // how long a computer's card stays up before that (2, 5 or 10)
   };
   const LENGTH_IDS = ['short', 'normal', 'long'];
   try {
@@ -35,6 +37,8 @@
       if (Array.isArray(saved.types)) saved.types.slice(0, 4).forEach((t, i) => { settings.types[i] = t === 'cpu' ? 'cpu' : 'human'; });
       if (LENGTH_IDS.includes(saved.length)) settings.length = saved.length;
       if (typeof saved.sound === 'boolean') settings.sound = saved.sound;
+      if (typeof saved.autoTap === 'boolean') settings.autoTap = saved.autoTap;
+      if ([2, 5, 10].includes(saved.autoSecs)) settings.autoSecs = saved.autoSecs;
     }
   } catch (e) { /* storage unavailable: defaults are fine */ }
   const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } };
@@ -120,6 +124,9 @@
   const elCount = $('#player-count');
   const elSeats = $('#seats');
   const elLength = $('#road-length');
+  const elAuto = $('#auto-tap');
+  const elAutoSecs = $('#auto-secs');
+  const elAutoSecsRow = $('#auto-secs-row');
   const elSummary = $('#summary');
 
   function buildSetup() {
@@ -132,6 +139,23 @@
       const b = e.target.closest('.seg');
       if (!b) return;
       settings.length = b.dataset.length;
+      Sound.click(); refreshSetup(); save();
+    });
+
+    elAuto.innerHTML = '<button type="button" class="seg" role="radio" data-auto="off">Off</button>' +
+      '<button type="button" class="seg" role="radio" data-auto="on">On</button>';
+    elAutoSecs.innerHTML = [2, 5, 10].map((s) =>
+      '<button type="button" class="seg" role="radio" data-secs="' + s + '">' + s + ' sec</button>').join('');
+    elAuto.addEventListener('click', (e) => {
+      const b = e.target.closest('.seg');
+      if (!b) return;
+      settings.autoTap = b.dataset.auto === 'on';
+      Sound.click(); refreshSetup(); save();
+    });
+    elAutoSecs.addEventListener('click', (e) => {
+      const b = e.target.closest('.seg');
+      if (!b) return;
+      settings.autoSecs = Number(b.dataset.secs);
       Sound.click(); refreshSetup(); save();
     });
 
@@ -179,6 +203,9 @@
     });
     mark(elCount, 'data-n', settings.players);
     mark(elLength, 'data-length', settings.length);
+    mark(elAuto, 'data-auto', settings.autoTap ? 'on' : 'off');
+    mark(elAutoSecs, 'data-secs', settings.autoSecs);
+    elAutoSecsRow.hidden = !settings.autoTap;
     elSeats.querySelectorAll('.seat').forEach((row, i) => {
       row.hidden = i >= settings.players;
       const mine = settings.hobbits[i];
@@ -1369,6 +1396,15 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
         [{ label: 'Continue', primary: true, run: () => { if (g !== gen) return; closeModal(); resolve(); } }],
         'card-modal'
       );
+      // Computer players may have Continue tapped for them after the chosen time. People always tap it themselves.
+      const shown = elModal.querySelector('.play-card');
+      if (settings.autoTap && isCpu(p.seat)) {
+        setTimeout(() => {
+          if (g !== gen || modalKind !== 'card-modal' || elModal.querySelector('.play-card') !== shown) return;
+          const btn = elModal.querySelector('.modal-actions .btn.primary');
+          if (btn) btn.click();
+        }, settings.autoSecs * 1000);
+      }
       setTimeout(() => {
         if (g !== gen) return;
         if (card.kind === 'special') (card.special === 'skip' ? Sound.bad() : Sound.win());

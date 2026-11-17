@@ -44,7 +44,7 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
 
 - **Players:** 2, 3 or 4, each a Person or the Computer. Picking a hobbit another player already has swaps the two.
 - **Road length:** Short, Normal or Long (see the table above).
-- Cards always wait for someone to press Continue, on a computer's turn too.
+- **Computer cards:** off by default, so a card on a computer's turn waits for someone to press Continue. Turn it **On** and choose how long each card stays up (2, 5 or 10 seconds) before Continue is tapped automatically. This applies to computer players only; people always press Continue themselves.
 - Settings are remembered between visits. Win counts are kept while you press **Next game**, and start again when you go back to the settings.
 
 ## Changing the cards
