@@ -746,21 +746,34 @@
   }
 
   // A Black Rider gallops across the Lone-lands near Bree.
-  function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
-    const art = '<ellipse cx="0" cy="1" rx="22" ry="4" fill="rgba(20,10,5,.25)"/>' +
-      '<g class="gallop"><path d="M-12,0 l3,-10 M-6,0 l-2,-10 M8,0 l3,-10 M14,0 l-2,-10" stroke="#151012" stroke-width="2.6"/>' +
-      '<ellipse cx="0" cy="-14" rx="16" ry="7" fill="#1e181a"/><path d="M12,-17 L20,-30 L25,-27 L19,-14 Z" fill="#1e181a"/>' +
-      '<path d="M-15,-16 q-8,0 -10,8" stroke="#1e181a" stroke-width="3" fill="none"/>' +
-      '<path d="M-6,-20 C-8,-30 -4,-42 2,-44 C8,-42 10,-32 8,-20 Z" fill="#100c0e"/>' +
-      '<path d="M-6,-22 C-14,-24 -20,-20 -24,-14 C-16,-17 -10,-17 -4,-18 Z" fill="#100c0e"/>' +
-      '<ellipse cx="3" cy="-37" rx="2.6" ry="3.2" fill="#000"/></g>' +
+function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
+    const horse = '<g class="gallop">' +
+      '<path class="leg-a" d="M9,-12 L11,0" stroke="#0f0b0d" stroke-width="2.8" stroke-linecap="round"/>' +
+      '<path class="leg-b" d="M13,-12 L15,0" stroke="#0f0b0d" stroke-width="2.8" stroke-linecap="round"/>' +
+      '<path class="leg-b" d="M-10,-12 L-12,0" stroke="#0f0b0d" stroke-width="2.8" stroke-linecap="round"/>' +
+      '<path class="leg-a" d="M-6,-12 L-6,0" stroke="#0f0b0d" stroke-width="2.8" stroke-linecap="round"/>' +
+      '<path class="trot" d="M-14,-22 Q-24,-20 -22,-8 Q-20,-14 -14,-14 Z" fill="#0a0708"/>' +
+      '<path d="M-14,-18 Q-14,-26 -4,-26 L10,-26 Q16,-26 16,-19 Q16,-13 8,-13 L-7,-13 Q-14,-13 -14,-18 Z" fill="#17120f"/>' +
+      '<path d="M9,-25 L15,-40 L21,-38 L15,-19 Z" fill="#17120f"/>' +
+      '<path d="M14,-42 Q18,-46 24,-42 L30,-37 Q31,-34 27,-34 L21,-35 L15,-33 Z" fill="#17120f"/>' +
+      '<path d="M11,-41 Q7,-34 10,-26 L12,-30 Q10,-36 14,-42 Z" fill="#050405"/>' +
+      '<circle cx="22" cy="-40" r=".8" fill="#e33"/>' +
+      '<path d="M-2,-26 L5,-22 M2,-26 L0,-14" stroke="#0a0708" stroke-width="2.4" stroke-linecap="round" fill="none"/>' +
+      '<path d="M-5,-27 Q-8,-40 -4,-52 L4,-52 Q7,-40 5,-27 Z" fill="#0c0a0b"/>' +
+      '<path d="M-5,-27 Q-11,-26 -13,-20 M5,-27 Q11,-26 13,-22" stroke="#0c0a0b" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+      '<path d="M3,-46 Q10,-42 12,-37" stroke="#0c0a0b" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
+      '<path d="M12,-37 L19,-63" stroke="#b9c2c6" stroke-width="1"/>' +
+      '<path d="M-5,-50 C-6,-64 -2,-69 1,-68 C5,-67 6,-61 5,-51 Z" fill="#0c0a0b"/>' +
+      '<path d="M-0.5,-58 Q1.5,-56 3,-58" stroke="#d8e6e0" stroke-width=".8" fill="none"/>' +
+      '</g>';
+    const art = SHADOW(22) + horse +
       '<g class="rider-mist">' + [0, 1, 2].map((i) => '<circle cx="' + (-24 - i * 9) + '" cy="-4" r="' + (5 + i * 2) + '" fill="#3a3436" opacity=".25"/>').join('') + '</g>';
     walker('critters', x0, y, x1 - x0, dy, dur, x1 < x0, art, 'rider');
     Sound.rider();
     return dur * 1000 + 300;
   }
 
-  // An Ent wakes up in Fangorn, takes a few slow steps, then goes still again.
+    // An Ent wakes up in Fangorn, takes a few slow steps, then goes still again.
   function entWalk() {
     let spot = null;
     for (let t = 0; t < 40 && !spot; t++) {
@@ -792,43 +805,90 @@
   // Every so often a small group walks across the open ground above the Hobbit Land title.
   // They are only for show and are not part of the game.
   const SIGN_Y = 668;   // feet line, just above the title box
+  // Passers-by are drawn with their feet on the ground at (0,0). Legs and arms swing (classes leg-a / leg-b).
+  const SHADOW = (rx) => '<ellipse cx="2" cy="1" rx="' + rx + '" ry="3.5" fill="rgba(40,30,10,.22)"/>';
+  function elfArt(dx, s) {
+    return '<g transform="translate(' + dx + ',0) scale(' + s + ')"><g class="trot">' +
+      '<path class="leg-a" d="M-2,-14 L-3,0" stroke="#3b4a36" stroke-width="2.2" stroke-linecap="round"/>' +
+      '<path class="leg-b" d="M2,-14 L3,0" stroke="#3b4a36" stroke-width="2.2" stroke-linecap="round"/>' +
+      '<path d="M-6,-44 Q-10,-22 -13,0 Q0,-3 13,0 Q10,-22 6,-44 Z" fill="#cfe0cb" stroke="#6f8a68" stroke-width=".8"/>' +
+      '<path d="M-2,-40 Q-4,-20 -6,-2 L-1,-3 Q-2,-20 0,-40 Z" fill="#8fb08a" opacity=".55"/>' +
+      '<path d="M-4,-44 L4,-44 L3,-30 L-3,-30 Z" fill="#9dbf96"/>' +
+      '<path d="M-4,-31 H4" stroke="#c9a449" stroke-width="1.1"/>' +
+      '<path class="leg-b" d="M-4,-42 Q-8,-37 -7,-31" stroke="#e7d2b0" stroke-width="1.8" fill="none" stroke-linecap="round"/>' +
+      '<path class="leg-a" d="M4,-42 Q8,-37 7,-31" stroke="#e7d2b0" stroke-width="1.8" fill="none" stroke-linecap="round"/>' +
+      '<path d="M-1.2,-48 H1.2 V-45 H-1.2 Z" fill="#e7d2b0"/>' +
+      '<path d="M-3.6,-51 L-8,-54.5 L-3.4,-48.5 Z M3.6,-51 L8,-54.5 L3.4,-48.5 Z" fill="#f2dcbc"/>' +
+      '<ellipse cx="0" cy="-51" rx="3.6" ry="4.2" fill="#f2dcbc"/>' +
+      '<path d="M-4.5,-52 Q-5,-60 0,-58.5 Q5,-60 4.5,-52 Q3,-55.5 0,-55.5 Q-3,-55.5 -4.5,-52 Z" fill="#e9cf72"/>' +
+      '<path d="M-4,-52 Q-6.5,-44 -5,-37 L-2.8,-41 Z M4,-52 Q6.5,-44 5,-37 L2.8,-41 Z" fill="#e9cf72"/>' +
+      '<circle cx="-1.3" cy="-51" r=".45" fill="#1a2a20"/><circle cx="1.3" cy="-51" r=".45" fill="#1a2a20"/>' +
+      '<circle cx="0" cy="-42" r="1" fill="#e8b43a"/></g></g>';
+  }
   function elfPair() {
-    const elf = (dx) => '<g transform="translate(' + dx + ',0)"><g class="trot">' +
-      '<path d="M-8,-30 L-11,0 L11,0 L8,-30 Z" fill="#c9d8c4" stroke="#6f8a68" stroke-width=".8"/>' +
-      '<path d="M-5,-40 Q0,-50 5,-40 L6,-30 Q0,-34 -6,-30 Z" fill="#e8c96a"/>' +
-      '<path d="M-5,-38 L-10,-42 L-5,-36 Z M5,-38 L10,-42 L5,-36 Z" fill="#f3dcc0"/>' +
-      '<circle cx="0" cy="-38" r="5" fill="#f3dcc0"/><circle cx="0" cy="-29" r="1.4" fill="#e8b43a"/></g></g>';
-    return '<ellipse cx="4" cy="1" rx="16" ry="3.5" fill="rgba(40,30,10,.2)"/>' + elf(0) + elf(-12);
+    return SHADOW(16) + elfArt(0, 1) + elfArt(-14, 0.95);
+  }
+  function orcArt(dx, s) {
+    return '<g transform="translate(' + dx + ',0) scale(' + s + ')"><g class="trot">' +
+      '<path class="leg-a" d="M-3,-12 L-4,0" stroke="#3d2f22" stroke-width="3.2" stroke-linecap="round"/>' +
+      '<path class="leg-b" d="M3,-12 L4,0" stroke="#3d2f22" stroke-width="3.2" stroke-linecap="round"/>' +
+      '<path d="M-7,-12 Q-9,-26 -4,-30 L5,-30 Q9,-26 7,-12 Z" fill="#4f5c35" stroke="#2c3520" stroke-width=".8"/>' +
+      '<path d="M-7,-16 H7" stroke="#2a1d10" stroke-width="2"/><rect x="-1.5" y="-17" width="3" height="3" fill="#b8862b"/>' +
+      '<path class="leg-a" d="M-5,-27 Q-8,-22 -7,-15" stroke="#66744a" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+      '<path class="leg-b" d="M5,-27 Q10,-22 9,-14" stroke="#66744a" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+      '<path d="M9,-14 L15,-46" stroke="#5a3d22" stroke-width="1.3"/><path d="M15,-46 L12.5,-40 L17.5,-40 Z" fill="#a9b2b8" stroke="#5f6870" stroke-width=".5"/>' +
+      '<ellipse cx="2" cy="-35" rx="6" ry="5.4" fill="#6e7d4a" stroke="#2c3520" stroke-width=".7"/>' +
+      '<path d="M-3.5,-36 L-9,-40 L-4,-33 Z" fill="#6e7d4a" stroke="#2c3520" stroke-width=".5"/>' +
+      '<path d="M-1,-38.5 L6,-38" stroke="#2c3520" stroke-width="1"/>' +
+      '<circle cx="0.5" cy="-36.5" r="1" fill="#ffd34d"/><circle cx="4" cy="-36.5" r="1" fill="#ffd34d"/>' +
+      '<path d="M-1,-31 L-2,-27 L0.5,-30.5 Z M4.5,-31 L5.5,-27 L3,-30.5 Z" fill="#f3ecd2"/></g></g>';
   }
   function orcBand() {
-    const orc = (dx, s) => '<g transform="translate(' + dx + ',0) scale(' + s + ')"><g class="trot">' +
-      '<path d="M-3,0 L-3,-8 M3,0 L3,-8" stroke="#3d4a2e" stroke-width="3"/>' +
-      '<path d="M-6,-8 Q-7,-20 -4,-24 L4,-24 Q7,-20 6,-8 Z" fill="#5d6b3e" stroke="#2f3a20" stroke-width=".8"/>' +
-      '<path d="M-2,-31 L-7,-33 L-3,-28 Z" fill="#6e7d4a"/>' +
-      '<circle cx="2" cy="-30" r="5" fill="#6e7d4a" stroke="#2f3a20" stroke-width=".8"/>' +
-      '<circle cx="4" cy="-31" r=".9" fill="#ffd34d"/>' +
-      '<path d="M8,-4 L14,-40" stroke="#5a3d22" stroke-width="1.4"/><path d="M14,-40 l-1.5,-5 l3,0 Z" fill="#9aa3a8"/></g></g>';
-    return '<ellipse cx="6" cy="1" rx="24" ry="4" fill="rgba(30,30,10,.2)"/>' + orc(-24, 1) + orc(-8, 0.92) + orc(10, 0.85);
+    return SHADOW(24) + orcArt(-24, 0.95) + orcArt(-8, 1) + orcArt(9, 0.9);
   }
   function gandalfOnFoot() {
-    return '<ellipse cx="2" cy="1" rx="10" ry="3" fill="rgba(40,30,10,.2)"/><g class="trot">' +
-      '<path d="M-7,0 L-6,-24 L6,-24 L7,0 Z" fill="#8e8e94" stroke="#5f5f66" stroke-width=".8"/>' +
-      '<circle cx="0" cy="-30" r="4" fill="#f0c9a3"/>' +
-      '<path d="M-3,-28 Q0,-18 3,-28 Z" fill="#f6f6f2"/>' +
-      '<ellipse cx="0" cy="-34" rx="6" ry="1.5" fill="#77777e"/>' +
-      '<path d="M-4.5,-34 L-1,-50 Q1,-53 3,-50 L1,-34 Z" fill="#8e8e94" stroke="#5f5f66" stroke-width=".8"/>' +
-      '<path d="M9,0 L10,-40" stroke="#6b4a2b" stroke-width="1.6"/><circle cx="10" cy="-41" r="2" fill="#fff3b0"/></g>';
+    return SHADOW(12) + '<g class="trot">' +
+      '<path class="leg-a" d="M-3,-3 L-5,0.8 L-0.5,0.8 Z" fill="#3a2a1a"/>' +
+      '<path class="leg-b" d="M3,-3 L5,0.8 L0.5,0.8 Z" fill="#3a2a1a"/>' +
+      '<path d="M-6,-40 Q-10,-20 -12,0 L12,0 Q10,-20 6,-40 Z" fill="#8e9097" stroke="#4f5058" stroke-width=".8"/>' +
+      '<path d="M-3,-30 Q-5,-16 -6,-2 M3,-30 Q5,-16 6,-2" stroke="#5f6068" stroke-width=".6" fill="none"/>' +
+      '<path d="M-6,-37 H6" stroke="#b8862b" stroke-width="1.6"/>' +
+      '<path class="leg-a" d="M-4,-36 Q-7,-30 -6,-24" stroke="#8e9097" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+      '<path class="leg-b" d="M4,-36 Q8,-30 8,-24" stroke="#8e9097" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+      '<path d="M8,-24 L12,-62" stroke="#6b4a2b" stroke-width="1.6" stroke-linecap="round"/>' +
+      '<circle cx="12" cy="-63" r="5" fill="#fff3b0" opacity=".35"/><circle cx="12" cy="-63" r="2.2" fill="#fff3b0" stroke="#e8b43a" stroke-width=".6"/>' +
+      '<rect x="-1.2" y="-42" width="2.4" height="3" fill="#f0c9a3"/>' +
+      '<circle cx="0" cy="-46" r="4.2" fill="#f0c9a3"/>' +
+      '<path d="M-3,-45.5 Q0,-35 3,-45.5 Z" fill="#f6f6f2"/>' +
+      '<path d="M-2.4,-48.5 H-0.6 M0.6,-48.5 H2.4" stroke="#c9c9c2" stroke-width=".6"/>' +
+      '<ellipse cx="0" cy="-51" rx="7" ry="1.6" fill="#6a6c74"/>' +
+      '<path d="M-5,-51 Q-3,-62 2,-70 Q4,-62 5,-51 Z" fill="#7d7f88" stroke="#4f5058" stroke-width=".6"/>' +
+      '<path d="M-5,-53 Q0,-52 5,-53" stroke="#4f5058" stroke-width=".6" fill="none"/></g>';
   }
   function hobbitWithPony() {
-    return '<ellipse cx="2" cy="1" rx="22" ry="4" fill="rgba(40,30,10,.2)"/><g class="trot">' +
-      '<path d="M2,-12 L3,0 M8,-12 L8,0" stroke="#5a3d22" stroke-width="2"/>' +
-      '<ellipse cx="6" cy="-14" rx="12" ry="6" fill="#a8774a" stroke="#5a3d22" stroke-width=".8"/>' +
-      '<path d="M16,-18 L20,-24 L23,-20 L19,-14 Z" fill="#a8774a" stroke="#5a3d22" stroke-width=".8"/>' +
-      '<path d="M-8,-12 L-9,0 M-4,-12 L-3,0" stroke="#5a3d22" stroke-width="2"/>' +
-      '<path d="M-8,-12 L-8,-21 L-2,-21 L-2,-12 Z" fill="#4f7a37"/>' +
-      '<circle cx="-5" cy="-24" r="3.6" fill="#f0c9a3"/><path d="M-9,-26 Q-5,-31 -1,-26 Z" fill="#6b4a2b"/></g>';
+    return SHADOW(26) + '<g class="trot">' +
+      '<g>' +
+      '<path class="leg-b" d="M-10,-12 L-11,0" stroke="#7a5530" stroke-width="2.6" stroke-linecap="round"/>' +
+      '<path class="leg-a" d="M-6,-12 L-5,0" stroke="#7a5530" stroke-width="2.6" stroke-linecap="round"/>' +
+      '<path class="leg-a" d="M9,-12 L10,0" stroke="#7a5530" stroke-width="2.6" stroke-linecap="round"/>' +
+      '<path class="leg-b" d="M13,-12 L14,0" stroke="#7a5530" stroke-width="2.6" stroke-linecap="round"/>' +
+      '<path d="M-14,-22 Q-22,-20 -20,-12 Q-18,-16 -14,-16 Z" fill="#3e2a18"/>' +
+      '<path d="M-14,-18 Q-14,-26 -4,-26 L8,-26 Q16,-26 16,-19 Q16,-12 8,-12 L-6,-12 Q-14,-12 -14,-18 Z" fill="#b08258" stroke="#6a4a2a" stroke-width=".8"/>' +
+      '<rect x="-12" y="-33" width="9" height="7" rx="1" fill="#9a6a3a" stroke="#5a3d22" stroke-width=".6"/>' +
+      '<path d="M10,-24 L16,-36 L21,-34 L15,-18 Z" fill="#b08258"/>' +
+      '<path d="M14,-36 Q11,-30 13,-25 L16,-28 Q15,-32 17,-36 Z" fill="#3e2a18"/>' +
+      '<path d="M16,-38 Q20,-42 25,-38 L27,-34 Q25,-31 21,-32 L17,-30 Z" fill="#b08258" stroke="#6a4a2a" stroke-width=".7"/>' +
+      '<circle cx="21.5" cy="-35" r=".6" fill="#1a1208"/></g>' +
+      '<g transform="translate(-30,0)">' +
+      '<path class="leg-a" d="M-2,-8 L-3,0" stroke="#6b4a2b" stroke-width="2.2" stroke-linecap="round"/>' +
+      '<path class="leg-b" d="M2,-8 L3,0" stroke="#6b4a2b" stroke-width="2.2" stroke-linecap="round"/>' +
+      '<path d="M-4.5,-20 Q-6,-12 -4,-8 L4,-8 Q6,-12 4.5,-20 Z" fill="#4f8a3a" stroke="#2f5a22" stroke-width=".6"/>' +
+      '<path class="leg-b" d="M4,-18 Q8,-14 9,-17" stroke="#4f8a3a" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+      '<circle cx="0" cy="-24" r="4" fill="#f0c9a3"/>' +
+      '<ellipse cx="0" cy="-27.5" rx="6" ry="1.1" fill="#7a4a2a"/><path d="M-3.8,-27.5 Q-3.8,-34 0,-34 Q3.8,-34 3.8,-27.5 Z" fill="#7a4a2a"/>' +
+      '</g></g>';
   }
-  function passerby() {
+    function passerby() {
     const kinds = ['rider', 'orcs', 'elves', 'gandalf', 'hobbit'];
     const kind = kinds[Math.floor(Math.random() * kinds.length)];
     const dir = Math.random() < 0.5 ? 1 : -1;
