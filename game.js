@@ -1293,8 +1293,10 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
       const n = NODES[p.node];
       $('.pwhere', el).textContent = p.place ? (n.kind === 'finish' ? 'Reached Mount Doom' : ORDINALS[p.place - 1] + ' place') : n.place + (p.cpu ? ' · Computer' : '');
       $('.pplace', el).textContent = p.place ? ' ' + MEDALS[p.place - 1] : '';
-      // badges: a rest bonus waiting to be used, or a turn Gollum has stolen
+      // badges: a rest bonus waiting to be used, a shortcut ready to take, or a turn Gollum has stolen
+      const onFork = !p.place && !!NODES[p.node].fork;
       const badges = (p.bonus && !p.place ? '<span class="pbadge rest" title="+1 on the next roll">🍃 +1</span>' : '') +
+        (onFork ? '<span class="pbadge short" title="Next move takes the shortcut">➜ Shortcut</span>' : '') +
         (p.skip && !p.place ? '<span class="pbadge skip" title="Misses the next turn">Skip</span>' : '');
       const bEl = $('.pbadges', el);
       if (bEl.innerHTML !== badges) bEl.innerHTML = badges;
