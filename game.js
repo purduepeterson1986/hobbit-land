@@ -101,7 +101,7 @@
       src.start(t);
     },
     click() { this.tone(620, 0, 0.08, 'triangle', 0.08, 400); },
-    dice() { for (let i = 0; i < 8; i++) this.noise(i * 0.075 + Math.random() * 0.02, 0.045, 0.175, 1400 + Math.random() * 1600); this.noise(0.7, 0.08, 0.2, 900); },
+    dice() { for (let i = 0; i < 8; i++) this.noise(i * 0.075 + Math.random() * 0.02, 0.045, 0.0875, 1400 + Math.random() * 1600); this.noise(0.7, 0.08, 0.1, 900); },
     step(back) { this.tone(back ? 300 : 360 + Math.random() * 50, 0, 0.08, 'triangle', 0.06, back ? 220 : 260); },
     card() { this.noise(0, 0.18, 0.25, 3200); this.tone(700, 0.05, 0.12, 'sine', 0.05, 900); },
     good() { [523, 659, 784, 1047].forEach((f, i) => this.tone(f, i * 0.08, 0.3, 'sine', 0.11)); },
@@ -741,7 +741,6 @@
     const c2 = FIREWORK_COLORS[Math.floor(Math.random() * FIREWORK_COLORS.length)];
     fxEl(fx, 'line', { x1: x, y1: y + 60, x2: x, y2: y + 60, stroke: '#ffe9a8', 'stroke-width': 2, class: 'rocket', style: '--rise:-60px' }, 500);
     setTimeout(() => {
-      Sound.pop();
       for (let i = 0; i < 18; i++) {
         const a = (i / 18) * Math.PI * 2, d = 26 + Math.random() * 22;
         fxEl(fx, 'circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: (1.8 + Math.random() * 1.6).toFixed(1), fill: i % 2 ? c1 : c2, class: 'burst',
@@ -1458,7 +1457,6 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
   };
   function showCard(p, card, g) {
     return new Promise((resolve) => {
-      Sound.card();
       openModal(
         '<div class="card-who">' + HB.portrait(p.h, 'cw-face') + '<span><b style="color:' + p.h.color + '">' + esc(p.name) + '</b> turns over a card</span></div>' +
         '<div class="play-card k-' + card.kind + (card.special ? ' sp-' + card.special : '') + '">' +
