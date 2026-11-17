@@ -394,6 +394,17 @@ h1, h2, p { margin: 0; }
 @keyframes mist { from { transform: translateX(-30px); } to { transform: translateX(30px); } }
 .flake { animation: flake 5s linear infinite; }
 @keyframes flake { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: .95; } 50% { transform: translate(8px, 80px); } 100% { transform: translate(-6px, 170px); opacity: 0; } }
+/* season colour: each season gives the whole map its own look */
+[data-season="spring"] #board { filter: saturate(1.15) hue-rotate(-4deg) brightness(1.03); }
+[data-season="summer"] #board { filter: saturate(1.3) brightness(1.05) contrast(1.03); }
+[data-season="autumn"] #board { filter: sepia(.25) saturate(1.1); }
+/* falling leaves and petals */
+.drift { animation: drift-fall linear infinite; transform-box: fill-box; transform-origin: center; pointer-events: none; }
+@keyframes drift-fall {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(calc(var(--sway) * .6), 480px) rotate(200deg); }
+  100% { transform: translate(var(--sway), 960px) rotate(400deg); }
+}
 /* passing birds */
 .flyby { animation: flyby var(--dur) linear forwards; }
 @keyframes flyby { to { transform: translate(var(--fx), var(--fy)); } }

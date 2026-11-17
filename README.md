@@ -36,7 +36,7 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
 - The scenery is rearranged each game: trees, rocks, sheep, horses, clouds and birds move around, and the season (spring, summer or autumn) and time of day (morning, midday or evening) change.
 - During play, flocks of birds now and then fly across the map.
 - **Visitors** (just for show): every few turns one may appear. Gollum peeks out from behind a rock near the leading hobbit; Gandalf's cart rolls through the Shire letting off fireworks; a great eagle glides over the Misty Mountains; a Black Rider gallops through the Lone-lands; an Ent wakes in Fangorn and takes a few steps.
-- **Passers-by** (just for show): every half minute or so, a small group crosses the open ground above the Hobbit Land title on the map: a Nazgûl rider, a band of orcs, two elves, Gandalf on foot, or a hobbit leading a pony.
+- **Passers-by** (just for show): every half minute or so, a small group crosses the open ground above the Hobbit Land title on the map: a Nazgûl rider, a band of orcs, two elves, Gandalf on foot, a hobbit leading a pony, two dwarves, or a pack of wargs.
 - **Weather** (just for show) comes and goes: a rain cloud drifting somewhere over the map, mist over the Dead Marshes, or snow on Caradhras.
 - **Celebrations:** fireworks when a hobbit finds a shortcut, and an eagle flies over Mount Doom when the winner arrives.
 

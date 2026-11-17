@@ -176,14 +176,14 @@
   const f1 = (v) => (Math.round(v * 10) / 10).toString();
 
   const SEASONS = {
-    spring: { name: 'Spring', grass: '#a9c97a', leaves: ['#7fb85a', '#93c868', '#6aa64c'], extra: '#f3b6c8', flowers: ['#f6a5c0', '#fff3a8', '#ffffff', '#c9a6f2'] },
-    summer: { name: 'Summer', grass: '#9cbd68', leaves: ['#5f9a3f', '#6fa94a', '#4f8a36'], extra: null, flowers: ['#ffd23f', '#ff8a5b', '#ffffff', '#7fb2ff'] },
-    autumn: { name: 'Autumn', grass: '#bcb46e', leaves: ['#d9902e', '#c4612a', '#e2b33b', '#9c6a2a'], extra: null, flowers: ['#ffcf5a', '#e8743b', '#fff1c1'] }
+    spring: { name: 'Spring', grass: '#a9c97a', leaves: ['#7fb85a', '#93c868', '#6aa64c'], extra: '#f3b6c8', flowers: ['#f6a5c0', '#fff3a8', '#ffffff', '#c9a6f2'], drift: ['#f6a5c0', '#ffffff', '#f9cfe0'] },
+    summer: { name: 'Summer', grass: '#9cbd68', leaves: ['#5f9a3f', '#6fa94a', '#4f8a36'], extra: null, flowers: ['#ffd23f', '#ff8a5b', '#ffffff', '#7fb2ff'], drift: null },
+    autumn: { name: 'Autumn', grass: '#bcb46e', leaves: ['#d9902e', '#c4612a', '#e2b33b', '#9c6a2a'], extra: null, flowers: ['#ffcf5a', '#e8743b', '#fff1c1'], drift: ['#d9902e', '#c4612a', '#e2b33b', '#9c6a2a'] }
   };
   const TIMES = {
-    morning: { name: 'Morning', tint: 'rgba(255,214,150,.10)', sky: 'rgba(255,240,210,.0)' },
-    midday: { name: 'Midday', tint: 'rgba(255,255,255,0)', sky: 'rgba(0,0,0,0)' },
-    evening: { name: 'Evening', tint: 'rgba(255,140,90,.12)', sky: 'rgba(120,70,140,.06)' }
+    morning: { name: 'Morning', tint: 'rgba(255,190,110,.24)', sky: 'rgba(255,240,210,.0)' },
+    midday: { name: 'Midday', tint: 'rgba(255,255,240,.12)', sky: 'rgba(0,0,0,0)' },
+    evening: { name: 'Evening', tint: 'rgba(90,40,120,.30)', sky: 'rgba(120,70,140,.06)' }
   };
 
   /* ---------- small drawings, origin at the bottom centre ---------- */
@@ -568,6 +568,14 @@
       const x = rand(120, 1480), y = rand(60, 780);
       if (nearRoad(x, y, 30)) continue;
       sky += wrap(x, y, 1, 'rx rx-birds', birds(), rx('birds', f1(x), f1(y), 100));
+    }
+
+    // falling leaves (autumn) or petals (spring) drift down the whole map
+    if (season.drift) {
+      for (let i = 0; i < 16; i++) {
+        const x = rand(0, 1600), y = rand(-40, 0), sway = rand(-90, 90);
+        sky += '<ellipse class="drift" cx="' + f1(x) + '" cy="' + f1(y) + '" rx="' + f1(rand(3, 5)) + '" ry="' + f1(rand(1.6, 2.6)) + '" fill="' + pick(season.drift) + '" style="--sway:' + f1(sway) + 'px;animation-duration:' + f1(rand(9, 16)) + 's;animation-delay:-' + f1(rand(0, 14)) + 's"/>';
+      }
     }
 
     items.sort((a, b) => a[0] - b[0]);

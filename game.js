@@ -363,6 +363,7 @@
     layer('critters').innerHTML = '';
     layer('weather').innerHTML = '';
     layer('tint').setAttribute('fill', look.time.tint);
+    elStage.dataset.season = look.season.name.toLowerCase();
     elStage.dataset.time = Object.keys({ morning: 1, midday: 1, evening: 1 }).find((k) => look.time.name.toLowerCase() === k) || 'midday';
     reactors = [...elBoard.querySelectorAll('[data-rx]')].map((el) => ({ el, x: Number(el.dataset.x), y: Number(el.dataset.y), r: Number(el.dataset.r) || 100 }));
     elStage.classList.remove('intro'); void elStage.offsetWidth; elStage.classList.add('intro');
@@ -589,6 +590,49 @@
     g.innerHTML = '<g class="flyby" style="--fx:' + (x1 - x0) + 'px;--fy:' + (y1 - y0).toFixed(0) + 'px;--dur:' + dur.toFixed(1) + 's">' + birds + '</g>';
     layer('sky').appendChild(g);
     setTimeout(() => g.remove(), dur * 1000 + 500);
+  }
+  // A few birds that wander about the map on their own curvy paths, each at its own speed.
+  function scheduleWander(g) {
+    setTimeout(() => {
+      if (g !== gen || !playing) return;
+      if (!reduceMotion() && elLayer.hidden) wanderBirds();
+      scheduleWander(g);
+    }, 9000 + Math.random() * 11000);
+  }
+  function wanderBirds() {
+    const rand = (a, b) => a + Math.random() * (b - a);
+    const count = 1 + Math.floor(Math.random() * 3);
+    for (let b = 0; b < count; b++) {
+      const s = 0.9 + Math.random() * 0.4;
+      const g = document.createElementNS(SVGNS, 'g');
+      g.innerHTML = '<path class="wing" style="animation-delay:-' + (Math.random() * 0.4).toFixed(2) + 's" d="M-7,0 q3.5,-5 7,0 q3.5,-5 7,0" stroke="#3b2a1c" stroke-width="1.6" fill="none" stroke-linecap="round"/>';
+      layer('sky').appendChild(g);
+      // enter from off the edge of the map, glide along a gently curving path at a steady speed, leave off the edge
+      let x = rand(200, 1400), y = -60, h = Math.PI / 2 + rand(-0.6, 0.6);
+      if (Math.random() < 0.5) { x = rand(200, 1400); y = 980; h = -Math.PI / 2 + rand(-0.6, 0.6); }
+      else if (Math.random() < 0.5) { x = -60; y = rand(100, 800); h = rand(-0.5, 0.5); }
+      else { x = 1660; y = rand(100, 800); h = Math.PI + rand(-0.5, 0.5); }
+      const pts = [[x, y]];
+      let len = 0;
+      for (let i = 0; i < 9; i++) {
+        h += rand(-0.3, 0.3);   // the heading changes a little at each step, so the path curves smoothly
+        const step = rand(220, 300);
+        const nx = x + Math.cos(h) * step, ny = y + Math.sin(h) * step;
+        len += step;
+        x = nx; y = ny;
+        pts.push([x, y]);
+        if (x < -80 || x > 1680 || y < -80 || y > 1000) break;   // it has flown off the map
+      }
+      const speed = 55 + Math.random() * 35;   // random speed in map units per second
+      const dur = (len / speed) * 1000;
+      let acc = 0;
+      const frames = pts.map(([px, py], i) => {
+        if (i > 0) acc += Math.hypot(px - pts[i - 1][0], py - pts[i - 1][1]);
+        return { offset: Math.min(1, acc / Math.max(1, len)), transform: 'translate(' + px.toFixed(0) + 'px,' + py.toFixed(0) + 'px) scale(' + s.toFixed(2) + ')' };
+      });
+      const anim = g.animate(frames, { duration: dur, easing: 'linear' });
+      anim.onfinish = () => g.remove();
+    }
   }
 
   /* ---------- Gollum peeks out ---------- */
@@ -874,6 +918,39 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
   function orcBand() {
     return SHADOW(24) + orcArt(-24, 0.95) + orcArt(-8, 1) + orcArt(9, 0.9);
   }
+  // a stocky dwarf with a grey beard and a hand-axe
+  function dwarfArt(dx, s) {
+    return '<g transform="translate(' + dx + ',0) scale(' + s + ')"><g class="trot">' +
+      '<path class="leg-a" d="M-3,-8 L-4,0" stroke="#3b2a1e" stroke-width="3" stroke-linecap="round"/>' +
+      '<path class="leg-b" d="M3,-8 L4,0" stroke="#3b2a1e" stroke-width="3" stroke-linecap="round"/>' +
+      '<path d="M-6,-8 Q-7,-20 -3,-24 L3,-24 Q7,-20 6,-8 Z" fill="#7a2e1e" stroke="#4a1a10" stroke-width=".8"/>' +
+      '<ellipse cx="0" cy="-30" rx="5" ry="5" fill="#f0c9a3"/>' +
+      '<path d="M-5,-30 Q-6,-18 0,-19 Q6,-18 5,-30 Z" fill="#9a8f80" stroke="#5a5248" stroke-width=".6"/>' +
+      '<path d="M-6,-31 Q0,-38 6,-31 Z" fill="#5a4030"/>' +
+      '<path d="M6,-14 L6,-28" stroke="#6b4a2b" stroke-width="1.2"/><path d="M6,-28 L11,-26 L11,-20 L6,-22 Z" fill="#a9b2b8" stroke="#5f6870" stroke-width=".5"/>' +
+      '</g></g>';
+  }
+  function dwarfPair() {
+    return SHADOW(16) + dwarfArt(0, 1) + dwarfArt(-14, 0.95);
+  }
+  // a pack of wargs, lean and grey, loping along in a line
+  function wargArt(dx, s) {
+    return '<g transform="translate(' + dx + ',0) scale(' + s + ')"><g class="trot">' +
+      '<path class="leg-a" d="M-8,-10 L-10,0" stroke="#4a4540" stroke-width="2.4" stroke-linecap="round"/>' +
+      '<path class="leg-b" d="M-3,-10 L-4,0" stroke="#4a4540" stroke-width="2.4" stroke-linecap="round"/>' +
+      '<path class="leg-a" d="M5,-10 L6,0" stroke="#4a4540" stroke-width="2.4" stroke-linecap="round"/>' +
+      '<path class="leg-b" d="M10,-10 L11,0" stroke="#4a4540" stroke-width="2.4" stroke-linecap="round"/>' +
+      '<path d="M-12,-17 Q-20,-20 -22,-14" stroke="#6d665d" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+      '<path d="M-12,-14 Q-10,-22 2,-22 L10,-22 Q16,-22 17,-17 Q16,-12 10,-11 L-10,-11 Q-13,-12 -12,-14 Z" fill="#6d665d" stroke="#3a3430" stroke-width=".8"/>' +
+      '<ellipse cx="20" cy="-20" rx="6" ry="4.5" fill="#6d665d" stroke="#3a3430" stroke-width=".7"/>' +
+      '<path d="M17,-23 L16,-28 L20,-24 Z" fill="#4a4540"/>' +
+      '<path d="M24,-19 L29,-18 L24,-17 Z" fill="#3a3430"/>' +
+      '<circle cx="21" cy="-21" r="1" fill="#f0c040"/>' +
+      '</g></g>';
+  }
+  function wargPack() {
+    return SHADOW(20) + wargArt(-22, 0.95) + wargArt(0, 1) + wargArt(20, 0.9);
+  }
   function gandalfOnFoot() {
     return SHADOW(12) + '<g class="trot">' +
       '<path class="leg-a" d="M-3,-3 L-5,0.8 L-0.5,0.8 Z" fill="#3a2a1a"/>' +
@@ -917,13 +994,13 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
       '</g></g>';
   }
     function passerby() {
-    const kinds = ['rider', 'orcs', 'elves', 'gandalf', 'hobbit'];
+    const kinds = ['rider', 'orcs', 'elves', 'gandalf', 'hobbit', 'dwarves', 'wargs'];
     const kind = kinds[Math.floor(Math.random() * kinds.length)];
     const dir = Math.random() < 0.5 ? 1 : -1;
     const x0 = dir > 0 ? -60 : 460, x1 = dir > 0 ? 460 : -60;
     if (kind === 'rider') { blackRider(x0, x1, SIGN_Y, 9, 0); return; }
-    const art = kind === 'orcs' ? orcBand() : kind === 'elves' ? elfPair() : kind === 'gandalf' ? gandalfOnFoot() : hobbitWithPony();
-    const dur = kind === 'orcs' ? 13 : kind === 'elves' ? 14 : 12;
+    const art = kind === 'orcs' ? orcBand() : kind === 'elves' ? elfPair() : kind === 'gandalf' ? gandalfOnFoot() : kind === 'dwarves' ? dwarfPair() : kind === 'wargs' ? wargPack() : hobbitWithPony();
+    const dur = kind === 'orcs' ? 13 : kind === 'elves' ? 14 : kind === 'wargs' ? 10 : kind === 'dwarves' ? 13 : 12;
     walker('critters', x0, SIGN_Y, x1 - x0, 0, dur, dir < 0, art, 'passer');
   }
   function scheduleSigns(g, first) {
@@ -1116,14 +1193,10 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
   // If the winner lands on another hobbit, they fight again.
   async function scuffle(p, g) {
     const q = players.find((o) => o !== p && !o.place && o.node === p.node);
-    if (!q || p.place) return;
+    if (!q || p.place || p.node === geo.start) return;   // no scuffles on the start space
     await brawl(p, g);
     guard(g);
     const w = Math.random() < 0.5 ? p : q;
-    toast("There's not room for both of us! " + w.name + ' pushes on ahead.', w.h.color, 2400);
-    // Let this message stay up for its full time (2400 + 2000 ms) before the winner moves on and any new message appears.
-    await sleep(4400);
-    guard(g);
     await move(w, 1, g);
     guard(g);
     await afterLanding(w, g, false);
@@ -1177,6 +1250,7 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
     renderBoard();
     playing = true; awaitingRoll = false; placesGiven = 0; moved = false; turnsSinceVisitor = 0; visitorBusyUntil = 0;
     scheduleBirds(gen);
+    scheduleWander(gen);
     scheduleWeather(gen, true);
     scheduleSigns(gen, true);
     players = Array.from({ length: settings.players }, (_, i) => {
