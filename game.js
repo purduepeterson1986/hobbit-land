@@ -1112,6 +1112,24 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
       requestAnimationFrame(step);
     });
   }
+  // After the fight, one of the two wins and moves on one space. Whose turn it is does not change.
+  // If the winner lands on another hobbit, they fight again.
+  async function scuffle(p, g) {
+    const q = players.find((o) => o !== p && !o.place && o.node === p.node);
+    if (!q || p.place) return;
+    await brawl(p, g);
+    guard(g);
+    const w = Math.random() < 0.5 ? p : q;
+    toast("There's not room for both of us! " + w.name + ' pushes on ahead.', w.h.color, 2400);
+    // Let this message stay up for its full time (2400 + 2000 ms) before the winner moves on and any new message appears.
+    await sleep(4400);
+    guard(g);
+    await move(w, 1, g);
+    guard(g);
+    await afterLanding(w, g, false);
+    guard(g);
+    await scuffle(w, g);
+  }
   async function swapPlaces(p, q, g) {
     const pn = p.node, qn = q.node;
     [p.trail, q.trail] = [q.trail, p.trail];
@@ -1241,7 +1259,7 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
       await move(p, v + bonus, g);
       await afterLanding(p, g, true);
       guard(g);
-      await brawl(p, g);
+      await scuffle(p, g);
       guard(g);
       endTurn();
     } catch (e) {
