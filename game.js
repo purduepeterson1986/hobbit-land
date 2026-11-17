@@ -113,9 +113,9 @@
     rest() { [784, 988, 1175].forEach((f, i) => this.tone(f, i * 0.1, 0.5, 'sine', 0.07)); },
     eagle() { this.tone(1500, 0, 0.35, 'triangle', 0.05, 950); this.tone(1400, 0.42, 0.45, 'triangle', 0.045, 820); },
     swap() { this.noise(0, 0.5, 0.18, 900); this.tone(300, 0, 0.4, 'sine', 0.06, 700); this.tone(700, 0.1, 0.4, 'sine', 0.05, 300); },
-    pop() { this.noise(0, 0.12, 0.3, 2400); this.tone(900 + Math.random() * 500, 0, 0.18, 'triangle', 0.04, 300); },
+    pop() { this.noise(0, 0.12, 0.15, 2400); this.tone(900 + Math.random() * 500, 0, 0.18, 'triangle', 0.02, 300); },
     hoom() { this.tone(98, 0, 0.9, 'sine', 0.12, 82); this.tone(147, 0.05, 0.8, 'sine', 0.05, 123); },
-    rider() { this.tone(220, 0, 1.1, 'sine', 0.05, 160); this.noise(0, 1.0, 0.06, 500); },
+    rider() { [0, 0.17, 0.31, 0.5, 0.66, 0.8, 0.97, 1.11].forEach((t, i) => this.noise(t + Math.random() * 0.012, 0.05, 0.002 + (i % 2) * 0.0004, 700 + (i % 2) * 180)); },
     finish() { this.noise(0, 0.5, 0.25, 300); [392, 523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.1 + i * 0.12, 0.45, 'triangle', 0.12)); },
     win() { [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => this.tone(f, i * 0.13, 0.4, 'triangle', 0.13)); }
   };
@@ -1462,6 +1462,7 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
         '<div class="play-card k-' + card.kind + (card.special ? ' sp-' + card.special : '') + '">' +
         (card.kind === 'special' ? '<div class="pc-rare">Rare card!</div>' : '') +
         '<div class="pc-corner tl">✦</div><div class="pc-corner br">✦</div>' +
+        '<div class="pc-who" style="--hc:' + p.h.color + '">' + HB.portrait(p.h, 'pc-who-face') + '</div>' +
         '<div class="pc-icon">' + ARROWS[card.special || card.kind] + '</div>' +
         (card.phrase ? '<p class="pc-phrase">' + esc(card.phrase) + '</p>' : '') +
         '<h2 id="modal-title" class="pc-text">' + esc(card.text) + '</h2>' +
