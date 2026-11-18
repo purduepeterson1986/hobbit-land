@@ -244,7 +244,7 @@ h1, h2, p { margin: 0; }
 .road.ferry { stroke: #c8d6d6; stroke-dasharray: 2 0; }
 .road-edge.tunnel { stroke: #1d1a18; opacity: .85; }
 .road.tunnel { stroke: #4a4038; stroke-dasharray: 10 6; }
-.road.lit { animation: road-lit 2.6s ease; }
+.road.lit, .road-body.lit { animation: road-lit 2.6s ease; }
 @keyframes road-lit { 15%, 70% { stroke: #b6f29a; filter: drop-shadow(0 0 6px #b6f29a); } }
 
 /* spaces */

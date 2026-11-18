@@ -22,6 +22,7 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
 - **Mines of Moria:** a shortcut under the Misty Mountains, starting at the Doors of Durin and rejoining the road at Lothlórien.
 - Along the way: Bree, Weathertop, Rivendell, Lothlórien, Amon Hen, the Emyn Muil, the Dead Marshes, Ithilien, Minas Morgul and Cirith Ungol.
 - Reaching Mount Doom does not need an exact roll.
+- The road takes on the land it crosses: a sandy lane in the Shire, packed earth to Rivendell, grey paving with snow over Caradhras, a boardwalk into the Dead Marshes, Gondor paving in Ithilien and black ash in Mordor. The spaces are stepping stones in the same colours, with grass, pebbles and footprints along the sides and wooden bridges where the road crosses a river.
 - **Road length** (chosen in settings), the same on all three maps:
 
   | Length | Spaces (long way) | With both shortcuts | Difference |

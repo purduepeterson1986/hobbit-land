@@ -345,26 +345,51 @@
         '<g transform="rotate(-14)"><ellipse rx="11" ry="5" fill="none" stroke="#8a5a12" stroke-width="3.6"/>' +
         '<path d="M-11,0 A11,5 0 0 0 11,0" fill="none" stroke="#f0c24a" stroke-width="3.6"/>' +
         '<path d="M-8,3.4 A11,5 0 0 0 6,4.2" fill="none" stroke="#fff3b0" stroke-width="1" opacity=".9"/></g>';
-    } else if (n.kind === 'fork') {
-      inner = '<circle class="sp-ring" r="20"/><circle class="sp-base" r="17"/>' +
-        '<path d="M0,10 V-11" stroke="#5a3d22" stroke-width="2.4"/>' +
-        '<path d="M-1,-11 H9 L13,-7.5 L9,-4 H-1 Z" fill="#f3e6c4" stroke="#5a3d22" stroke-width="1.2"/>' +
-        '<path d="M1,-2 H-9 L-13,1.5 L-9,5 H1 Z" fill="#f3e6c4" stroke="#5a3d22" stroke-width="1.2"/>';
+    } else {
+      inner = stoneSVG(n);
+    }
+    return '<g transform="translate(' + n.x.toFixed(1) + ',' + n.y.toFixed(1) + ')"><g class="' + cls + '" data-id="' + n.id + '" style="animation-delay:' + (i * 9) + 'ms">' +
+      '<ellipse class="sp-shadow" cx="1.5" cy="3.4" rx="17" ry="12.6"/>' + inner + '</g></g>';
+  }
+
+  // Every other space is a flat stepping stone with an uneven edge, coloured by the land it stands in.
+  // Card spaces are gold stones, forks are tinted green, resting places pale green; each keeps its icon.
+  const steady = (i, k) => { const x = Math.sin(i * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };   // the same shape every game
+  function tint(a, b, t) {
+    const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const A = p(a), B = p(b);
+    return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join('');
+  }
+  function stoneSVG(n) {
+    const land = BOARD.landOf(geo)[n.id] || 'earth', L = BOARD.LAND[land];
+    let fill = L.stone, edge = L.edge;
+    if (n.fork) fill = tint(fill, '#9cc977', 0.6);
+    else if (n.rest) fill = tint(fill, '#cfeed6', 0.7);
+    else if (n.card) { fill = land === 'moria' ? '#e0b54c' : '#f3c95b'; edge = land === 'moria' ? '#3e2a10' : '#8a4b12'; }
+    let d = '';
+    const rot = steady(n.id, 7) * Math.PI * 2;
+    for (let k = 0; k < 10; k++) {
+      const a = rot + (k / 10) * Math.PI * 2, r = 16.5 + (steady(n.id, k + 11) - 0.5) * 3;
+      d += (k ? ' L' : 'M') + (Math.cos(a) * r).toFixed(1) + ',' + (Math.sin(a) * r * 0.92).toFixed(1);
+    }
+    d += ' Z';
+    let s = '<path class="sp-stone" d="' + d + '" fill="' + fill + '" stroke="' + edge + '" stroke-width="2"/>' +
+      '<path d="' + d + '" transform="translate(-2,-2.4) scale(.66)" fill="' + tint(fill, '#ffffff', 0.45) + '" opacity=".55"/>';
+    if (L.snow && !n.card && !n.fork && !n.rest) s += '<path d="M-10,-9 Q-4,-15 4,-14.4 Q10,-13 12,-8 Q4,-11 -2,-10 Q-6,-8 -10,-9 Z" fill="#fbfbff" opacity=".95"/>';
+    if (n.kind === 'fork') {
+      s += '<path d="M0,9 V-10" stroke="#5a3d22" stroke-width="2.2"/>' +
+        '<path d="M-1,-10 H8 L11.4,-7 L8,-4 H-1 Z" fill="#f3e6c4" stroke="#5a3d22" stroke-width="1.1"/>' +
+        '<path d="M1,-2 H-8 L-11.4,1 L-8,4 H1 Z" fill="#f3e6c4" stroke="#5a3d22" stroke-width="1.1"/>';
     } else if (n.rest) {
       // a resting place: +1 on the next roll
-      inner = '<circle class="sp-ring" r="20"/><circle class="sp-base" r="17"/>' +
-        '<path d="M-7,5 C-9,-5 -1,-11 8,-9 C8,-1 2,6 -7,5 Z" fill="#5fae6a" stroke="#2e6b3a" stroke-width="1.2"/>' +
+      s += '<path d="M-7,5 C-9,-5 -1,-11 8,-9 C8,-1 2,6 -7,5 Z" fill="#5fae6a" stroke="#2e6b3a" stroke-width="1.2"/>' +
         '<path d="M-7,5 L5,-6" stroke="#2e6b3a" stroke-width="1"/>' +
         '<text class="sp-plus" x="10" y="14" text-anchor="middle">+1</text>';
     } else if (n.card) {
-      inner = '<circle class="sp-base" r="16"/>' +
-        '<g transform="rotate(-8)"><rect x="-6.5" y="-9" width="13" height="18" rx="2.2" fill="#fff8e2" stroke="#7a2f1a" stroke-width="1.3"/>' +
+      s += '<g transform="rotate(-8)"><rect x="-6.5" y="-9" width="13" height="18" rx="2.2" fill="#fff8e2" stroke="#7a2f1a" stroke-width="1.3"/>' +
         '<path d="M0,-5 L3.2,0 L0,5 L-3.2,0 Z" fill="#b8342a"/></g>';
-    } else {
-      inner = '<circle class="sp-base" r="16"/><circle class="sp-shine" cx="-5" cy="-6" r="5"/>';
     }
-    return '<g transform="translate(' + n.x.toFixed(1) + ',' + n.y.toFixed(1) + ')"><g class="' + cls + '" data-id="' + n.id + '" style="animation-delay:' + (i * 9) + 'ms">' +
-      '<ellipse class="sp-shadow" cx="1.5" cy="3" rx="17" ry="13"/>' + inner + '</g></g>';
+    return s;
   }
 
   // The compass rose sits in open ground in the lower middle of the map, clear of the road and the place names.
@@ -604,12 +629,10 @@
     setTimeout(() => doors.el.classList.remove('awake'), 5200);
   }
   function highlightShortcut(id) {
-    const roads = layer('road').querySelectorAll('path');
-    const idx = BOARD.SHORTCUTS.findIndex((s) => s.id === id) + 1;   // roads: main first, then shortcuts (2 paths each)
-    const el = roads[idx * 2 + 1];
-    if (!el) return;
-    el.classList.remove('lit'); void el.getBoundingClientRect(); el.classList.add('lit');
-    setTimeout(() => el.classList.remove('lit'), 2600);
+    layer('road').querySelectorAll('[data-route="' + id + '"]').forEach((el) => {
+      el.classList.remove('lit'); void el.getBoundingClientRect(); el.classList.add('lit');
+      setTimeout(() => el.classList.remove('lit'), 2600);
+    });
   }
 
   /* ---------- little effects ---------- */

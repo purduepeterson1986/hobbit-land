@@ -894,6 +894,15 @@
   }
 
   /* ---------- the parts of the map that are the same every game ---------- */
+  // the Brandywine and the Anduin on each map
+  const RIVERS = {
+    southern: [{ w: 9, pts: [[252, -10], [262, 120], [282, 250], [302, 350], [330, 450], [356, 560], [376, 700], [360, 820], [334, 930]] },
+      { w: 11, pts: [[1440, -10], [1420, 180], [1400, 300], [1380, 420], [1340, 520], [1300, 620], [1262, 720], [1210, 930]] }],
+    serpent: [{ w: 9, pts: [[318, -10], [326, 140], [336, 250], [364, 330], [384, 420], [350, 520], [320, 640], [336, 780], [330, 930]] },
+      { w: 11, pts: [[1400, -10], [1380, 150], [1340, 260], [1300, 340], [1250, 420], [1200, 520], [1130, 620], [1070, 740], [1040, 930]] }],
+    classic: [{ w: 9, pts: [[486, -10], [470, 150], [462, 300], [440, 420], [418, 500], [430, 640], [470, 780], [500, 930]] },
+      { w: 11, pts: [[1352, -10], [1350, 180], [1344, 330], [1336, 470], [1290, 562], [1220, 622], [1192, 648], [1120, 712], [1062, 792], [1036, 930]] }]
+  };
   function terrainHTML(map) {
     const river = (pts, w) => {
       const c = curve(pts, 0, pts.length - 1, 16);
@@ -914,14 +923,7 @@
       '<ellipse cx="970" cy="650" rx="120" ry="70" fill="#c2b9a2"/>' +
       '</g>' +
       // rivers: the Brandywine and the Anduin
-      (map === 'southern'
-        ? river([[252, -10], [262, 120], [282, 250], [302, 350], [330, 450], [356, 560], [376, 700], [360, 820], [334, 930]], 9) +
-          river([[1440, -10], [1420, 180], [1400, 300], [1380, 420], [1340, 520], [1300, 620], [1262, 720], [1210, 930]], 11)
-        : map === 'serpent'
-        ? river([[318, -10], [326, 140], [336, 250], [364, 330], [384, 420], [350, 520], [320, 640], [336, 780], [330, 930]], 9) +
-          river([[1400, -10], [1380, 150], [1340, 260], [1300, 340], [1250, 420], [1200, 520], [1130, 620], [1070, 740], [1040, 930]], 11)
-        : river([[486, -10], [470, 150], [462, 300], [440, 420], [418, 500], [430, 640], [470, 780], [500, 930]], 9) +
-          river([[1352, -10], [1350, 180], [1344, 330], [1336, 470], [1290, 562], [1220, 622], [1192, 648], [1120, 712], [1062, 792], [1036, 930]], 11)) +
+      (RIVERS[map] || RIVERS.classic).map((r) => river(r.pts, r.w)).join('') +
       // Shire hills
       '<g fill="#9cc06c" stroke="#77984c" stroke-width="1.2" opacity=".85">' +
       '<path d="M150,290 Q190,250 230,290 Z"/><path d="M40,300 Q90,250 140,300 Z"/><path d="M300,120 Q340,84 380,120 Z"/><path d="M300,380 Q330,350 370,380 Z" />' +
@@ -990,14 +992,133 @@
     return s;
   }
 
-  function roadHTML(geo) {
-    return geo.roads.map((r) => {
-      if (r.id === 'moria') {
-        return '<path d="' + r.d + '" class="road-edge tunnel" /><path d="' + r.d + '" class="road tunnel"/>';
-      }
-      return '<path d="' + r.d + '" class="road-edge' + (r.id === 'ferry' ? ' ferry' : '') + '"/><path d="' + r.d + '" class="road' + (r.id === 'ferry' ? ' ferry' : '') + '"/>';
-    }).join('');
+  /* ---------- the road ---------- */
+  // Each stretch of road takes on the land it crosses, decided by the stop it is heading to.
+  const STOP_LAND = { bagend: 'lane', maggot: 'lane', bree: 'lane', weathertop: 'earth', rivendell: 'earth', durin: 'earth', lorien: 'mountain',
+    amonhen: 'forest', emynmuil: 'rock', marshes: 'boardwalk', ithilien: 'gondor', morgul: 'gondor', ungol: 'mordor', doom: 'mordor' };
+  // verge: the soft edge either side; road: the surface; tex: marks on the surface (D is the path); stone/edge: the stepping stones
+  const LAND = {
+    lane: { verge: '#7fa04f', vo: 0.45, road: '#e3cc94', tex: '<path d="D" stroke="#cdb078" stroke-width="7" opacity=".5" fill="none" stroke-linecap="round"/>', stone: '#f1e5c4', edge: '#8a6a3a' },
+    earth: { verge: '#8a7a4a', vo: 0.35, road: '#d6b880', tex: '<path d="D" stroke="#a88a58" stroke-width="3" stroke-dasharray="0.1 7" opacity=".7" fill="none" stroke-linecap="round"/>', stone: '#eadab6', edge: '#7a5a32' },
+    mountain: { verge: '#8f8a80', vo: 0.5, road: '#cbc5b9', tex: '<path d="D" stroke="#b5aea1" stroke-width="19" stroke-dasharray="7 2" fill="none"/>', stone: '#dedad2', edge: '#6e6a62', snow: true },
+    forest: { verge: '#6f9a48', vo: 0.4, road: '#dbc68e', tex: '<path d="D" stroke="#e2b33b" stroke-width="3.4" stroke-dasharray="0.1 9" fill="none" stroke-linecap="round"/>', stone: '#efe4c4', edge: '#8a7040' },
+    rock: { verge: '#8a8478', vo: 0.45, road: '#c6bda9', tex: '<path d="D" stroke="#9a9282" stroke-width="3" stroke-dasharray="0.1 6" fill="none" stroke-linecap="round"/>', stone: '#d8d0c0', edge: '#6e6656' },
+    boardwalk: { verge: '#4f5e48', vo: 0.5, road: '#8e6a40', w: 20, tex: '<path d="D" stroke="#b08a58" stroke-width="18" stroke-dasharray="3.2 1.3" fill="none"/>', stone: '#d2bc92', edge: '#5a4a32' },
+    gondor: { verge: '#6f9a48', vo: 0.4, road: '#cbc3a8', tex: '<path d="D" stroke="#b7ae92" stroke-width="19" stroke-dasharray="5 1.6" fill="none"/><path d="D" stroke="#7fa04f" stroke-width="2" stroke-dasharray="0.1 13" opacity=".7" fill="none" stroke-linecap="round"/>', stone: '#e4dfcc', edge: '#7a7462' },
+    mordor: { verge: '#c84a1a', vo: 0.22, road: '#3b2d27', tex: '<path d="D" stroke="#e2541c" stroke-width="2" stroke-dasharray="1.5 8" opacity=".6" fill="none" stroke-linecap="round"/>', stone: '#5e4d44', edge: '#1d1411' },
+    ferry: { verge: '#5f8fb0', vo: 0.4, road: '#a9cfe0', tex: '<path d="D" stroke="#fff" stroke-width="2" stroke-dasharray="6 10" opacity=".8" fill="none" stroke-linecap="round"/>', stone: '#d6c3a0', edge: '#5a4a3a' },
+    moria: { stone: '#8b8279', edge: '#2e2924' }
+  };
+  // which land each space stands in, plus the long road in order (worked out once per board)
+  function landOf(geo) {
+    if (geo.land) return geo.land;
+    const N = geo.nodes, land = {}, order = [];
+    for (let n = N[geo.start]; n; n = n.next != null ? N[n.next] : null) order.push(n);
+    let cur = 'mordor';
+    for (let i = order.length - 1; i >= 0; i--) { if (order[i].stop) cur = STOP_LAND[order[i].stop] || cur; land[order[i].id] = cur; }
+    N.forEach((m) => { if (m.route !== 'main') land[m.id] = m.route === 'ferry' ? 'ferry' : 'moria'; });
+    geo.land = land;
+    geo.longRoad = order;
+    return land;
+  }
+  const steady = (i, k) => { const x = Math.sin(i * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };   // the same "random" every game
+  function nearestOn(geo, route, x, y) {
+    let best = null, bd = Infinity;
+    geo.nodes.forEach((m) => { if (m.route === route) { const d = (m.x - x) ** 2 + (m.y - y) ** 2; if (d < bd) { bd = d; best = m; } } });
+    return best;
   }
 
-  window.HL_BOARD = { horseArt, W, H, STOPS, SHORTCUTS, MAPS, build, dress, terrainHTML, cartoucheHTML, labelsHTML, roadHTML };
+  function roadHTML(geo) {
+    const land = landOf(geo);
+    let verge = '', body = '', tex = '';
+    geo.roads.forEach((r) => {
+      if (r.id === 'moria') {   // the tunnel under the mountains stays dark
+        verge += '<path d="' + r.d + '" class="road-edge tunnel"/>';
+        body += '<path d="' + r.d + '" class="road tunnel" data-route="moria"/>';
+        return;
+      }
+      // split the road into stretches by the land each part crosses
+      const groups = [];
+      r.pts.forEach((p) => {
+        const L = r.id === 'main' ? land[nearestOn(geo, 'main', p[0], p[1]).id] : 'ferry';
+        const g = groups[groups.length - 1];
+        if (!g || g.L !== L) { if (g) g.pts.push(p); groups.push({ L, pts: [p] }); } else g.pts.push(p);
+      });
+      groups.forEach((g) => {
+        const d = 'M' + g.pts.map((p) => f1(p[0]) + ',' + f1(p[1])).join('L'), s = LAND[g.L];
+        verge += '<path d="' + d + '" stroke="' + s.verge + '" stroke-width="36" opacity="' + s.vo + '" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '<path d="' + d + '" stroke="' + s.verge + '" stroke-width="27" opacity="' + (s.vo * 0.8).toFixed(2) + '" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+        body += '<path d="' + d + '" class="road-body" data-route="' + r.id + '" stroke="' + s.road + '" stroke-width="' + (s.w || 22) + '" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+        tex += s.tex.replace(/D/g, d);
+      });
+    });
+    return verge + body + tex + bridgesHTML(geo) + roadsideHTML(geo);
+  }
+
+  // grass, pebbles, flowers, reeds or embers along the sides, and footprints between the spaces
+  function roadsideHTML(geo) {
+    const N = geo.nodes, land = landOf(geo);
+    let s = '';
+    const near = (x, y, r) => N.some((m) => Math.abs(m.x - x) < r && Math.abs(m.y - y) < r && Math.hypot(m.x - x, m.y - y) < r);
+    geo.roads.forEach((r) => {
+      if (r.id === 'moria') return;
+      const pts = r.pts;
+      for (let i = 2, k = 0; i < pts.length - 2; i += 3, k++) {
+        const [x, y] = pts[i], [ax, ay] = pts[i - 1], [bx, by] = pts[i + 1];
+        const dl = Math.hypot(bx - ax, by - ay) || 1, nx = -(by - ay) / dl, ny = (bx - ax) / dl;
+        const L = r.id === 'main' ? land[nearestOn(geo, 'main', x, y).id] : 'ferry';
+        const side = steady(k, 1) < 0.5 ? -1 : 1, off = 16 + steady(k, 2) * 5;
+        const px = x + nx * off * side, py = y + ny * off * side;
+        if (near(px, py, 21)) continue;
+        const kind = steady(k, 3), t = 'translate(' + f1(px) + ',' + f1(py) + ')';
+        if (L === 'mordor') s += kind < 0.6 ? '<ellipse transform="' + t + '" rx="2.4" ry="1.6" fill="#2a1d18"/>' : '<circle transform="' + t + '" r="1.2" fill="#ff7a2a" opacity=".7"/>';
+        else if (L === 'boardwalk') s += kind < 0.5 ? '<rect transform="' + t + '" x="-1.4" y="-5" width="2.8" height="6" fill="#4a3220"/>' : '<path transform="' + t + '" d="M-2,0 q-1,-6 -3,-9 M0,0 v-10 M2,0 q1,-6 3,-8" stroke="#6b7a4a" stroke-width="1" fill="none"/>';
+        else if (L === 'ferry') s += '<path transform="' + t + '" d="M-4,0 q2,-2 4,0 q2,-2 4,0" stroke="#e4f3fb" stroke-width="1" fill="none"/>';
+        else if (L === 'mountain' || L === 'rock') s += kind < 0.55 ? '<path transform="' + t + '" d="M-3.4,0 L-2.4,-3 L0.6,-4 L3,-2 L3.4,0 Z" fill="' + (L === 'mountain' && kind < 0.25 ? '#fbfbff' : '#a39d90') + '"/>' : '<ellipse transform="' + t + '" rx="1.8" ry="1.2" fill="#8a8478"/>';
+        else if (kind < 0.55) s += '<path transform="' + t + '" d="M-3,0 q0,-4 -2,-6 M0,0 q0,-5 1,-7 M3,0 q0,-4 2,-5" stroke="' + (L === 'forest' ? '#6f8a3a' : '#6f9440') + '" stroke-width="1.1" fill="none" stroke-linecap="round"/>';
+        else if (kind < 0.78) s += '<ellipse transform="' + t + '" rx="2" ry="1.3" fill="#a89e8a"/>';
+        else s += '<g transform="' + t + '"><circle r="1.4" fill="' + (L === 'forest' ? '#e2b33b' : ['#f6a5c0', '#fff3a8', '#ffffff'][k % 3]) + '"/><circle r=".5" fill="#e8a83a"/></g>';
+      }
+    });
+    geo.longRoad.forEach((n) => {
+      if (n.next == null || !['lane', 'earth', 'forest'].includes(land[n.id])) return;
+      const m = N[n.next], x = (n.x + m.x) / 2, y = (n.y + m.y) / 2, a = Math.atan2(m.y - n.y, m.x - n.x) * 180 / Math.PI;
+      s += '<g transform="translate(' + f1(x) + ',' + f1(y) + ') rotate(' + f1(a) + ')" fill="#a8885a" opacity=".55"><ellipse cx="-3" cy="-2.4" rx="1.8" ry="1"/><ellipse cx="2" cy="2.4" rx="1.8" ry="1"/></g>';
+    });
+    return s;
+  }
+
+  // a wooden bridge wherever the long road crosses a river
+  function bridgesHTML(geo) {
+    const main = geo.roads.find((r) => r.id === 'main');
+    if (!main) return '';
+    const pts = main.pts;
+    let s = '';
+    (RIVERS[geo.map] || RIVERS.classic).forEach((rv) => {
+      const rp = curve(rv.pts, 0, rv.pts.length - 1, 48);
+      let run = [];
+      const flush = () => {
+        if (!run.length) return;
+        const i = run[Math.floor(run.length / 2)], [x, y] = pts[i];
+        const a = pts[Math.min(pts.length - 1, i + 2)], b = pts[Math.max(0, i - 2)];
+        const ang = Math.atan2(a[1] - b[1], a[0] - b[0]) * 180 / Math.PI;
+        s += '<g transform="translate(' + f1(x) + ',' + f1(y) + ') rotate(' + f1(ang) + ')">' +
+          '<ellipse cx="2" cy="16" rx="30" ry="4" fill="rgba(30,50,60,.25)"/>' +
+          '<path d="M-32,-13 L-26,-13 L-26,13 L-32,13 Z M26,-13 L32,-13 L32,13 L26,13 Z" fill="#b0a898" stroke="#6e6656" stroke-width=".8"/>' +
+          '<rect x="-26" y="-12" width="52" height="24" fill="#a8804e" stroke="#5a3d22" stroke-width="1"/>' +
+          '<path d="M-26,0 H26" stroke="#c49a64" stroke-width="22" stroke-dasharray="3.2 1.3"/>' +
+          '<path d="M-26,-12 H26 M-26,12 H26" stroke="#5a3d22" stroke-width="2.2" stroke-linecap="round"/>' +
+          '<path d="M-24,-12 v-3 M-12,-12 v-3 M0,-12 v-3 M12,-12 v-3 M24,-12 v-3 M-24,12 v3 M-12,12 v3 M0,12 v3 M12,12 v3 M24,12 v3" stroke="#4a3220" stroke-width="1.8" stroke-linecap="round"/></g>';
+        run = [];
+      };
+      pts.forEach((p, i) => {
+        if (rp.some((q) => Math.abs(q[0] - p[0]) < 8 && Math.abs(q[1] - p[1]) < 8 && Math.hypot(q[0] - p[0], q[1] - p[1]) < 7)) run.push(i); else flush();
+      });
+      flush();
+    });
+    return s;
+  }
+
+
+  window.HL_BOARD = { horseArt, landOf, LAND, W, H, STOPS, SHORTCUTS, MAPS, build, dress, terrainHTML, cartoucheHTML, labelsHTML, roadHTML };
 })();
