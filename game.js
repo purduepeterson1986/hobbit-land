@@ -2256,7 +2256,7 @@
       '<div class="trophy-all">' + players.map((p) => HB.portrait(p.h, 'avatar')).join('') + '</div>' +
       '<h2 id="modal-title">Good game!</h2>' +
       '<p class="sub">' + esc(winner.name) + ' carried the Ring all the way to Mount Doom.</p>' +
-      '<p class="series">Wins in this run (' + series.games + (series.games === 1 ? ' game' : ' games') + '): ' + standings + '</p>' +
+      '<p class="series">Overall Score: ' + standings + '</p>' +
       '<div class="ranks">' + rows + '</div>',
       [
         { label: 'Next game', primary: true, run: () => { startIndex++; startGame(); } },
