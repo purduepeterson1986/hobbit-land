@@ -38,12 +38,13 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
 - **Visitors** (just for show): every few turns one may appear. Gollum peeks out from behind a rock near the leading hobbit; Gandalf's cart rolls through the Shire letting off fireworks; a great eagle glides over the Misty Mountains; a Black Rider gallops through the Lone-lands; an Ent wakes in Fangorn and takes a few steps.
 - **Passers-by** (just for show): every half minute or so, a small group crosses the open ground above the Hobbit Land title on the map: a Nazgûl rider, a band of orcs, two elves, Gandalf on foot, a hobbit leading a pony, two dwarves, or a pack of wargs.
 - **Weather** (just for show) comes and goes: a rain cloud drifting somewhere over the map, mist over the Dead Marshes, or snow on Caradhras.
-- **Celebrations:** fireworks when a hobbit finds a shortcut, and an eagle flies over Mount Doom when the winner arrives.
+- **Celebrations:** fireworks when a hobbit finds a shortcut. When a hobbit reaches Mount Doom, the volcano erupts, the Free Peoples (hobbits, dwarves, elves, men and Gandalf) fade in above the Hobbit Land title and dance, and an eagle flies from Farmer Maggot's to Mount Doom and carries the hobbit home to Bag End. The dancers fade away when he is set down.
 
 ## Settings
 
 - **Players:** 2, 3 or 4, each a Person or the Computer. Picking a hobbit another player already has swaps the two.
 - **Road length:** Short, Normal or Long (see the table above).
+- **Map:** chosen at random each game from three layouts: Eriador (the road described above), Serpent (a zig-zag road across the map) or Ithilien (a road that runs south first). They share the same stops, forks, rest stops and lengths. The start message says which map is in play.
 - **Auto-tap Computer Cards:** off by default, so a card on a computer's turn waits for someone to press Continue. Turn it **On** and choose how long each card stays up (2, 5 or 10 seconds) before Continue is tapped automatically. This applies to computer players only; people always press Continue themselves.
 - Settings are remembered between visits. Win counts are kept while you press **Next game**, and start again when you go back to the settings.
 

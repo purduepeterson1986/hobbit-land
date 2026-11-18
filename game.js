@@ -26,6 +26,8 @@
     autoSecs: 5         // how long a computer's card stays up before that (2, 5 or 10)
   };
   const LENGTH_IDS = ['short', 'normal', 'long'];
+  const MAP_IDS = ['classic', 'serpent', 'southern'];
+  const MAP_NAMES = { classic: 'Eriador', serpent: 'Serpent', southern: 'Ithilien' };
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
     if (saved && typeof saved === 'object') {
@@ -144,6 +146,7 @@
       Sound.click(); refreshSetup(); save();
     });
 
+
     elAuto.innerHTML = '<button type="button" class="seg" role="radio" data-auto="off">Off</button>' +
       '<button type="button" class="seg" role="radio" data-auto="on">On</button>';
     elAutoSecs.innerHTML = [2, 5, 10].map((s) =>
@@ -208,6 +211,9 @@
     mark(elAuto, 'data-auto', settings.autoTap ? 'on' : 'off');
     mark(elAutoSecs, 'data-secs', settings.autoSecs);
     elAutoSecsRow.hidden = !settings.autoTap;
+    // Auto-tap only matters when a seat is a computer player, so the section is shown only then.
+    const anyCpu = Array.from({ length: settings.players }, (_, i) => isCpu(i)).some(Boolean);
+    $('#auto-panel').hidden = !anyCpu;
     elSeats.querySelectorAll('.seat').forEach((row, i) => {
       row.hidden = i >= settings.players;
       const mine = settings.hobbits[i];
@@ -248,9 +254,10 @@
 
   // One road for each length, built the first time it is needed.
   const BOARDS = {};
-  function boardFor(length) {
-    if (BOARDS[length]) return BOARDS[length];
-    const b = BOARD.build(length);
+  function boardFor(length, map) {
+    const key = map + '|' + length;
+    if (BOARDS[key]) return BOARDS[key];
+    const b = BOARD.build(length, map);
     // A short "where am I" name for every space: the nearest named place, or the shortcut it is on.
     const stopNodes = b.nodes.filter((n) => n.name);
     b.nodes.forEach((n) => {
@@ -261,10 +268,11 @@
       n.place = 'Near ' + best.name;
     });
     b.startDist = b.dist[b.start];
-    BOARDS[length] = b;
+    BOARDS[key] = b;
     return b;
   }
-  let geo = boardFor('normal');
+  let geo = boardFor('normal', 'classic');
+  let mapNow = 'classic';   // the map chosen for the game in play
   let NODES = geo.nodes;
   let START_DIST = geo.startDist;
 
@@ -350,7 +358,7 @@
 
   function renderBoard() {
     look = BOARD.dress(geo);
-    layer('terrain').innerHTML = BOARD.terrainHTML() + BOARD.cartoucheHTML();
+    layer('terrain').innerHTML = BOARD.terrainHTML(geo.map) + BOARD.cartoucheHTML(MAP_NAMES[geo.map]);
     layer('scenery').innerHTML = look.sceneryHTML;
     layer('landmarks').innerHTML = look.landmarkHTML;
     layer('road').innerHTML = BOARD.roadHTML(geo);
@@ -361,6 +369,7 @@
     layer('fx').innerHTML = '';
     layer('fx-under').innerHTML = '';
     layer('critters').innerHTML = '';
+    crowd = null;
     layer('weather').innerHTML = '';
     layer('tint').setAttribute('fill', look.time.tint);
     elStage.dataset.season = look.season.name.toLowerCase();
@@ -552,13 +561,24 @@
         style: '--dx:' + (Math.cos(a) * d).toFixed(1) + 'px;--dy:' + (Math.sin(a) * d).toFixed(1) + 'px;animation-delay:' + (Math.random() * 80).toFixed(0) + 'ms' }, 1100);
     }
   }
+  // The winner's eruption at Mount Doom: a flash, a shockwave, two waves of lava and a smoke column.
   function eruption() {
     if (reduceMotion()) return;
     const fx = layer('fx');
-    for (let i = 0; i < 26; i++) {
-      const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.6, d = 60 + Math.random() * 90;
-      fxEl(fx, 'circle', { cx: 1480, cy: 778, r: (2.5 + Math.random() * 4).toFixed(1), fill: Math.random() < 0.5 ? '#ff6a1a' : '#ffd34d', class: 'lava-drop',
-        style: '--dx:' + (Math.cos(a) * d).toFixed(1) + 'px;--dy:' + (Math.sin(a) * d).toFixed(1) + 'px;animation-delay:' + (Math.random() * 300).toFixed(0) + 'ms' }, 1800);
+    const cx = 1480, cy = 778;
+    fxEl(fx, 'circle', { cx, cy: cy - 70, r: 26, fill: '#ffd34d', class: 'erupt-flash' }, 1400);
+    fxEl(fx, 'circle', { cx, cy: cy - 70, r: 30, fill: 'none', stroke: '#ff8a2a', 'stroke-width': 6, class: 'erupt-ring' }, 1800);
+    for (let wave = 0; wave < 2; wave++) {
+      for (let i = 0; i < 60; i++) {
+        const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.0, d = 120 + Math.random() * 260;
+        fxEl(fx, 'circle', { cx, cy: cy - 70, r: (3 + Math.random() * 7).toFixed(1), fill: ['#ff6a1a', '#ffd34d', '#e8541c'][Math.floor(Math.random() * 3)], class: 'lava-drop',
+          style: '--dx:' + (Math.cos(a) * d).toFixed(1) + 'px;--dy:' + (Math.sin(a) * d).toFixed(1) + 'px;animation-delay:' + (wave * 500 + Math.random() * 400).toFixed(0) + 'ms;animation-duration:' + (2.4 + Math.random() * 1.2).toFixed(2) + 's' }, 5000);
+      }
+    }
+    for (let i = 0; i < 8; i++) {
+      const dx = (Math.random() - 0.5) * 120;
+      fxEl(fx, 'circle', { cx: (cx + (Math.random() - 0.5) * 40).toFixed(1), cy: cy - 60, r: (10 + Math.random() * 10).toFixed(1), fill: '#4a3f3a', class: 'erupt-smoke',
+        style: '--dx:' + dx.toFixed(1) + 'px;animation-delay:' + (Math.random() * 600).toFixed(0) + 'ms' }, 5200);
     }
     elStage.classList.remove('quake'); void elStage.offsetWidth; elStage.classList.add('quake');
   }
@@ -993,6 +1013,75 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
       '<ellipse cx="0" cy="-27.5" rx="6" ry="1.1" fill="#7a4a2a"/><path d="M-3.8,-27.5 Q-3.8,-34 0,-34 Q3.8,-34 3.8,-27.5 Z" fill="#7a4a2a"/>' +
       '</g></g>';
   }
+  // a man of Gondor or a Ranger: tall, in a dark green cloak, with a sword at his side
+  function manArt(dx, s, cloak) {
+    return '<g transform="translate(' + dx + ',0) scale(' + s + ')"><g class="trot">' +
+      '<path class="leg-a" d="M-3,-16 L-4,0" stroke="#3a2e22" stroke-width="3" stroke-linecap="round"/>' +
+      '<path class="leg-b" d="M3,-16 L4,0" stroke="#3a2e22" stroke-width="3" stroke-linecap="round"/>' +
+      '<path d="M-7,-46 Q-11,-26 -12,-12 L12,-12 Q11,-26 7,-46 Z" fill="' + cloak + '" stroke="#26301e" stroke-width=".8"/>' +
+      '<path d="M-4,-44 L4,-44 L3,-20 L-3,-20 Z" fill="#6b5a44"/>' +
+      '<path d="M-4,-28 H4" stroke="#3a2614" stroke-width="1.6"/>' +
+      '<path d="M7,-26 L13,-8" stroke="#c9ced2" stroke-width="1.8" stroke-linecap="round"/><path d="M5,-28 L9,-25" stroke="#8a6a2a" stroke-width="1.6"/>' +
+      '<path class="leg-a" d="M-6,-43 Q-11,-36 -10,-29" stroke="' + cloak + '" stroke-width="3.2" fill="none" stroke-linecap="round"/>' +
+      '<path class="leg-b" d="M6,-43 Q11,-36 10,-29" stroke="' + cloak + '" stroke-width="3.2" fill="none" stroke-linecap="round"/>' +
+      '<rect x="-1.4" y="-50" width="2.8" height="4" fill="#e3bc94"/>' +
+      '<ellipse cx="0" cy="-53" rx="4.2" ry="4.8" fill="#e3bc94"/>' +
+      '<path d="M-4.6,-53 Q-5,-60 0,-59.5 Q5,-60 4.6,-53 Q4.5,-47 3.5,-46 L3,-53 Q0,-56 -3,-53 L-3.5,-46 Q-4.5,-47 -4.6,-53 Z" fill="#3a2a1c"/>' +
+      '<circle cx="-1.5" cy="-53" r=".5" fill="#1a1208"/><circle cx="1.5" cy="-53" r=".5" fill="#1a1208"/>' +
+      '</g></g>';
+  }
+  // a hobbit on his own: short, curly-haired, barefoot, with a coloured waistcoat
+  function hobbitArt(dx, s, vest) {
+    return '<g transform="translate(' + dx + ',0) scale(' + s + ')"><g class="trot">' +
+      '<path class="leg-a" d="M-2.5,-9 L-3,-1" stroke="#7a5a3a" stroke-width="2.6" stroke-linecap="round"/>' +
+      '<path class="leg-b" d="M2.5,-9 L3,-1" stroke="#7a5a3a" stroke-width="2.6" stroke-linecap="round"/>' +
+      '<ellipse cx="-3.5" cy="0" rx="3" ry="1.3" fill="#c48c5c"/><ellipse cx="3.5" cy="0" rx="3" ry="1.3" fill="#c48c5c"/>' +
+      '<path d="M-5.5,-23 Q-7,-14 -5,-9 L5,-9 Q7,-14 5.5,-23 Z" fill="#f1e6c8" stroke="#8a7a5a" stroke-width=".6"/>' +
+      '<path d="M-5,-22 L-1,-22 L-1,-11 L-5,-11 Z M1,-22 L5,-22 L5,-11 L1,-11 Z" fill="' + vest + '"/>' +
+      '<path class="leg-a" d="M-5,-21 Q-9,-17 -8,-12" stroke="#f1e6c8" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
+      '<path class="leg-b" d="M5,-21 Q9,-17 8,-12" stroke="#f1e6c8" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
+      '<circle cx="0" cy="-27.5" r="4.6" fill="#f0c9a3"/>' +
+      '<path d="M-5,-28 Q-6,-34 -2,-33.5 Q0,-35.5 2,-33.5 Q6,-34 5,-28 Q4,-31 2,-31 Q0,-32.5 -2,-31 Q-4,-31 -5,-28 Z" fill="#6a4426"/>' +
+      '<circle cx="-1.5" cy="-27.5" r=".5" fill="#1a1208"/><circle cx="1.5" cy="-27.5" r=".5" fill="#1a1208"/>' +
+      '<path d="M-1.5,-25.3 Q0,-24.2 1.5,-25.3" stroke="#8a4a2a" stroke-width=".6" fill="none"/>' +
+      '</g></g>';
+  }
+
+  // When a hobbit reaches Mount Doom, the Free Peoples gather above the Hobbit Land title and dance
+  // until the eagle sets the hobbit down at Bag End.
+  let crowd = null;
+  function startParty() {
+    if (crowd || reduceMotion()) return;
+    const folk = [
+      () => hobbitArt(0, 1, '#b8862b'), () => dwarfArt(0, 1), () => elfArt(0, 1), () => manArt(0, 1, '#4a5a3a'),
+      () => hobbitArt(0, 1, '#4f7a3a'), () => gandalfOnFoot(), () => dwarfArt(0, 1), () => hobbitArt(0, 1, '#7a2e1e'),
+      () => elfArt(0, 1), () => manArt(0, 1, '#5a4a6a'), () => hobbitArt(0, 1, '#3a5a8a'),
+    ];
+    const n = folk.length, left = 58, right = 362;
+    let html = '';
+    folk.forEach((make, i) => {
+      const x = left + (right - left) * i / (n - 1) + (Math.random() * 8 - 4);
+      const flip = Math.random() < 0.5 ? -1 : 1;
+      const d = (0.55 + Math.random() * 0.35).toFixed(2), dl = (-Math.random()).toFixed(2), r = ((Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 8)).toFixed(1);
+      html += '<g class="dancer" style="animation-delay:' + (i * 0.18 + Math.random() * 0.3).toFixed(2) + 's" transform="translate(' + x.toFixed(1) + ',' + SIGN_Y + ')">' + SHADOW(11) +
+        '<g class="dance" style="--d:' + d + 's;--dl:' + dl + 's;--r:' + r + 'deg"><g transform="scale(' + (1.25 * flip) + ',1.25)">' + make() + '</g></g></g>';
+    });
+    // Anyone already walking past above the title quietly fades away, so no one crosses in front of the dancers.
+    for (const w of [...layer('critters').children]) {
+      if ((w.getAttribute('transform') || '').endsWith(',' + SIGN_Y + ')')) { w.classList.add('shoo'); setTimeout(() => w.remove(), 700); }
+    }
+    crowd = document.createElementNS(SVGNS, 'g');
+    crowd.setAttribute('class', 'crowd');
+    crowd.innerHTML = html;
+    layer('critters').appendChild(crowd);
+  }
+  function endParty() {
+    if (!crowd) return;
+    const c = crowd;
+    crowd = null;
+    c.classList.add('leaving');
+    setTimeout(() => c.remove(), 900);
+  }
     function passerby() {
     const kinds = ['rider', 'orcs', 'elves', 'gandalf', 'hobbit', 'dwarves', 'wargs'];
     const kind = kinds[Math.floor(Math.random() * kinds.length)];
@@ -1006,7 +1095,7 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
   function scheduleSigns(g, first) {
     setTimeout(() => {
       if (g !== gen || !playing) return;
-      if (!reduceMotion()) passerby();
+      if (!reduceMotion() && !crowd) passerby();
       scheduleSigns(g, false);
     }, first ? 9000 + Math.random() * 8000 : 28000 + Math.random() * 24000);
   }
@@ -1063,7 +1152,11 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
   /* ---------- special card moves ---------- */
   // Fly a token through the air along a list of spaces, optionally carried by an eagle.
   function flyAlong(p, ids, lift, ms, carried) {
-    const pts = [[p.x, p.y]].concat(ids.map((id) => [NODES[id].x, NODES[id].y]));
+    return flyPts(p, ids.map((id) => [NODES[id].x, NODES[id].y]), lift, ms, carried);
+  }
+  // Fly a token through the air along a list of points (map coordinates).
+  function flyPts(p, points, lift, ms, carried) {
+    const pts = [[p.x, p.y]].concat(points);
     const lens = [0];
     for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
     const L = lens[lens.length - 1] || 1;
@@ -1119,18 +1212,76 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
     guard(g);
     updatePlayers();
   }
-  // After a hobbit's place is announced at Mount Doom, an eagle swoops down and carries them back to Bag End.
+  // After a hobbit's place is announced at Mount Doom, an eagle leaves Farmer Maggot's, glides over the map to Mount Doom,
+  // lifts the hobbit and carries him over the top of the map to Bag End. The eagle stays on the map the whole way.
+  // One eagle does the whole trip, and it never leaves the map.
+  function animate(ms, fn) {
+    const t0 = performance.now();
+    return new Promise((res) => {
+      const step = (now) => {
+        const t = Math.min(1, (now - t0) / ms);
+        fn(t);
+        if (t < 1) requestAnimationFrame(step); else res();
+      };
+      requestAnimationFrame(step);
+    });
+  }
+  const ease = (t) => t * t * (3 - 2 * t);
+  const quad = (a, c, b, t) => (1 - t) * (1 - t) * a + 2 * (1 - t) * t * c + t * t * b;
+  const inMap = (x, y) => [Math.max(60, Math.min(1540, x)), Math.max(50, Math.min(870, y))];
+  // The bend point for a curve from height a to height b whose highest point is exactly `top`.
+  const bendFor = (a, b, top) => top >= Math.min(a, b) ? Math.min(a, b) : top - Math.sqrt((a - top) * (b - top));
   async function eagleBack(p, g) {
     const start = geo.start;
-    if (p.node === start) return;
-    toast('An eagle swoops down and carries ' + p.name + ' back to Bag End.', p.h.color, 2400);
-    eagleFly(p.x + 240, p.y - 380, p.x + 90, p.y - 150, p.x, p.y - 80, 1.1, 1);
-    await sleep(900);
-    guard(g);
-    p.active = true;
-    sortTokens();
-    settleLater(p.node, p);
-    await flyAlong(p, [start], 70, 2200, true);
+    if (p.node === start) { endParty(); return; }
+    const s = geo.nodes[start];
+    if (reduceMotion()) {
+      p.x = s.x; p.y = s.y; drawToken(p);
+    } else {
+      const home = geo.stopNode.maggot || s;
+      const bird = document.createElementNS(SVGNS, 'g');
+      bird.innerHTML = eagleArt(1);
+      layer('sky').appendChild(bird);
+      const put = (x, y, o) => {
+        bird.setAttribute('transform', 'translate(' + x.toFixed(1) + ',' + y.toFixed(1) + ')');
+        if (o != null) bird.setAttribute('opacity', o.toFixed(2));
+      };
+      const TALON = 70;                       // eagle sits this far above the hobbit's feet when holding him
+      // 1. Rise up from Farmer Maggot's and glide across the top of the map to above Mount Doom.
+      const [ax, ay] = inMap(home.x, home.y - 40);
+      const [hx, hy] = inMap(p.x, p.y - TALON - 90);
+      const cx = (ax + hx) / 2, cy = bendFor(ay, hy, Math.max(60, Math.min(ay, hy) - 150));
+      Sound.eagle();
+      await animate(4200, (t) => { const u = ease(t); put(quad(ax, cx, hx, u), quad(ay, cy, hy, u), Math.min(1, t * 5)); });
+      guard(g);
+      // 2. Drop down onto the hobbit and grab him.
+      await animate(700, (t) => { const u = ease(t); put(hx, hy + (p.y - TALON - hy) * u); });
+      guard(g);
+      Sound.eagle();
+      await sleep(350);
+      guard(g);
+      // 3. Carry him back over the map to Bag End.
+      p.active = true;
+      sortTokens();
+      settleLater(p.node, p);
+      const x0 = p.x, y0 = p.y;
+      const LIFT = 80;
+      const kx = (x0 + s.x) / 2, ky = bendFor(y0, s.y, Math.max(75 + TALON + LIFT, Math.min(y0, s.y) - 150));
+      await animate(5200, (t) => {
+        const u = ease(t);
+        const nx = quad(x0, kx, s.x, u), ny = quad(y0, ky, s.y, u);
+        if (Math.abs(nx - p.x) > 0.5) p.dir = nx < p.x ? -1 : 1;
+        p.x = nx; p.y = ny;
+        p.h0 = LIFT * Math.min(1, t * 6, (1 - t) * 6);
+        drawToken(p);
+        put(nx, ny - p.h0 - TALON);
+      });
+      guard(g);
+      p.h0 = 0; drawToken(p);
+      endParty();
+      // 4. Let go, climb a little and fade away over Bag End.
+      animate(1200, (t) => put(s.x, Math.max(40, s.y - TALON - 40 * ease(t)), 1 - t)).then(() => bird.remove());
+    }
     guard(g);
     p.trail.push(start);
     p.node = start;
@@ -1244,7 +1395,9 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
     closeModal();
     stopConfetti();
     elToast.classList.remove('show');
-    geo = boardFor(settings.length);
+    // Each game picks one of the three maps at random.
+    mapNow = MAP_IDS[Math.floor(Math.random() * MAP_IDS.length)];
+    geo = boardFor(settings.length, mapNow);
     NODES = geo.nodes;
     START_DIST = geo.startDist;
     renderBoard();
@@ -1271,8 +1424,8 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
     setRoll(false);
     sleep(700).then(() => {
       if (g !== gen) return;
-      toast(look.season.name + ' ' + look.time.name.toLowerCase() + ' in the Shire. ' + first.name + ' goes first!', first.h.color, 2200);
-      return sleep(1400);
+      toast(look.season.name + ' ' + look.time.name.toLowerCase() + ' in the Shire.\nHobbits using the ' + MAP_NAMES[mapNow] + ' map.\n' + first.name + ' goes first!', first.h.color, 6000);   // stays up for 8 seconds (6 s + the 2 s hold)
+      return sleep(8000);
     }).then(() => { if (g === gen) beginTurn(); });
   }
 
@@ -1430,7 +1583,7 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
     p.place = placesGiven;
     Sound.finish();
     eruption();
-    if (p.place === 1) setTimeout(() => eagleFly(1100, -90, 1480, 650, 1720, 420, 6, 1.3), 900);
+    startParty();
     sparkle(p.x, p.y, '#ffd34d', 18);
     setBadge(p);
     updatePlayers();
@@ -1532,6 +1685,7 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
   function toast(text, color, ms) {
     clearTimeout(toastTimer);
     elToast.textContent = text;
+    elToast.classList.toggle('lines', text.includes('\n'));   // several lines: keep each on its own line
     elToast.style.setProperty('--tc', color || '#fff');
     elToast.classList.add('show');
     // Every message stays up two seconds longer than its base time.

@@ -46,10 +46,44 @@
     normal: { name: 'Normal' },
     long: { name: 'Long' }
   };
-  function stopsFor(length) {
+  function stopsFor(length, MAP) {
     const list = STOPS.map((st) => Object.assign({}, st));
     const i = list.findIndex((st) => st.id === 'marshes');
     const ith = list.find((st) => st.id === 'ithilien');
+    if (MAP === 'southern') {
+      applyMap(list, MAP);
+      if (length === 'short') {
+        // Emyn Muil and the Dead Marshes are left out; the bottom of the map shifts right
+        list.splice(list.indexOf(list.find((st) => st.id === 'marshes')), 1);
+        list.splice(list.indexOf(list.find((st) => st.id === 'emynmuil')), 1);
+        Object.assign(ith, { at: [1120, 720], n: 6, via: [[1330, 420], [1260, 560]], label: [34, -4], anchor: 'start' });
+        Object.assign(list.find((st) => st.id === 'morgul'), { at: [1260, 840] });
+        Object.assign(list.find((st) => st.id === 'ungol'), { at: [1380, 820] });
+        Object.assign(list.find((st) => st.id === 'amonhen'), { label: [-28, 6], anchor: 'end' });
+      } else if (length === 'long') {
+        // from Emyn Muil the road runs west past Ithilien, loops round through the south-west and comes back to the Dead Marshes
+        Object.assign(list.find((st) => st.id === 'marshes'), { at: [700, 860], n: 20, via: [[1360, 470], [1230, 580], [1080, 640], [930, 690], [780, 745], [620, 780], [500, 805], [420, 860], [480, 898]], label: [0, -34], anchor: 'middle' });
+      }
+      return list;
+    }
+    if (MAP === 'serpent') {
+      // Serpent's own short and long roads, on top of its normal stops
+      applyMap(list, MAP);
+      const m = list.find((st) => st.id === 'marshes'), e = list.find((st) => st.id === 'emynmuil');
+      if (length === 'short') {
+        list.splice(list.indexOf(m), 1);
+        list.splice(list.indexOf(e), 1);
+        // the bottom of the map shifts right: Ithilien, Minas Morgul and Cirith Ungol move over
+        Object.assign(ith, { at: [1040, 780], n: 6, via: [[1240, 540], [1120, 640]], label: [34, -4], anchor: 'start' });
+        Object.assign(list.find((st) => st.id === 'morgul'), { at: [1130, 860] });
+        Object.assign(list.find((st) => st.id === 'ungol'), { at: [1300, 770] });
+        Object.assign(list.find((st) => st.id === 'amonhen'), { label: [-28, 6], anchor: 'end' });
+      } else if (length === 'long') {
+        // from Emyn Muil the road runs west past Ithilien, loops round and comes back to the Dead Marshes
+        Object.assign(m, { at: [600, 860], n: 20, via: [[1000, 620], [860, 640], [700, 650], [560, 700], [470, 790], [500, 880], [560, 905]], label: [0, -34], anchor: 'middle' });
+      }
+      return list;
+    }
     if (length === 'short') {
       // straight down from Amon Hen to Ithilien
       list.splice(i, 1);
@@ -61,6 +95,7 @@
         via: [[868, 724], [760, 698], [640, 692], [528, 722], [462, 800], [530, 876], [660, 888]] });
       Object.assign(ith, { n: 7, via: [[862, 872], [972, 886]] });
     }
+    if (length !== 'short' && length !== 'long') applyMap(list, MAP);
     return list;
   }
 
@@ -68,6 +103,39 @@
     { id: 'ferry', name: 'Buckleberry Ferry', from: 'maggot', to: 'bree', n: 5, via: [[450, 298], [528, 282]], label: [492, 336] },
     { id: 'moria', name: 'Mines of Moria', from: 'durin', to: 'lorien', n: 6, via: [[1068, 404], [1180, 434]], label: [1150, 470] }
   ];
+
+  /* ---------- preview routes: same stops and step counts, new geometry ---------- */
+  const MAPS = {
+    serpent: { name: 'Serpent', stops: {
+      maggot: { at: [150, 532], label: [-4, 40] }, bree: { at: [430, 200] }, weathertop: { at: [640, 400] }, rivendell: { at: [820, 190] },
+      durin: { at: [1000, 400] }, lorien: { at: [1180, 200], via: [[1056, 446], [1120, 452], [1170, 440], [1196, 330]] }, amonhen: { at: [1320, 380] }, emynmuil: { at: [1150, 560] },
+      marshes: { at: [960, 640] }, ithilien: { at: [760, 780] }, morgul: { at: [960, 860] }, ungol: { at: [1200, 760] } },
+      flip: ['ferry'] },
+    southern: { name: 'Southern Marches', stops: {
+      maggot: { at: [260, 340], via: [[250, 178], [325, 194], [338, 262]] }, bree: { at: [420, 500], via: [[120, 390], [100, 470], [160, 560], [270, 572], [345, 540]] }, weathertop: { at: [580, 700] }, rivendell: { at: [760, 515] },
+      durin: { at: [808, 172], via: [[760, 420], [790, 300]] }, lorien: { at: [1100, 330], via: [[880, 330], [990, 440], [1080, 440], [1110, 380]] }, amonhen: { at: [1280, 250] }, emynmuil: { at: [1420, 400] },
+      marshes: { at: [1240, 560] }, ithilien: { at: [1020, 720] }, morgul: { at: [1200, 840] }, ungol: { at: [1360, 840] } } }
+  };
+  function applyMap(list, map) {
+    const M = MAPS[map];
+    if (!M) return list;
+    list.forEach((st) => { const o = M.stops[st.id]; if (o) { st.at = o.at; st.via = o.via || []; if (o.label) st.label = o.label; } });
+    return list;
+  }
+  // Shortcut routes for a preview map: bow to the north of the straight line between the two stops.
+  function shortcutsFor(map, STOPS) {
+    if (!MAPS[map]) return SHORTCUTS;
+    return SHORTCUTS.map((sc) => {
+      const f = STOPS.find((s) => s.id === sc.from).at, t = STOPS.find((s) => s.id === sc.to).at;
+      const dx = t[0] - f[0], dy = t[1] - f[1], len = Math.hypot(dx, dy) || 1;
+      let px = -dy / len, py = dx / len;
+      if (py > 0) { px = -px; py = -py; }
+      if ((MAPS[map].flip || []).includes(sc.id)) { px = -px; py = -py; }
+      const bow = 70;
+      const via = [[f[0] + dx * 0.33 + px * bow, f[1] + dy * 0.33 + py * bow], [f[0] + dx * 0.66 + px * bow, f[1] + dy * 0.66 + py * bow]];
+      return Object.assign({}, sc, { via, label: [f[0] + dx * 0.5 + px * bow * 0.9, f[1] + dy * 0.5 + py * bow * 0.9 - 8] });
+    });
+  }
 
   /* ---------- curve helpers ---------- */
   const mirror = (a, b) => [2 * a[0] - b[0], 2 * a[1] - b[1]];
@@ -106,8 +174,8 @@
   const pathD = (pts) => 'M' + pts.map((p) => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('L');
 
   /* ---------- build the road graph (same every game) ---------- */
-  function build(length) {
-    const STOPS = stopsFor(length || 'normal');
+  function build(length, map) {
+    const STOPS = stopsFor(length || 'normal', map);
     const nodes = [];
     const add = (p, o) => { const n = Object.assign({ id: nodes.length, x: p[0], y: p[1], next: null, alt: null, route: 'main', kind: 'path' }, o); nodes.push(n); return n; };
 
@@ -133,8 +201,9 @@
     const mainPts = curve(ctrl, 0, ctrl.length - 1, 30);
     roads.push({ id: 'main', pts: mainPts, d: pathD(mainPts) });
 
-    SHORTCUTS.forEach((sc) => {
-      const fi = STOPS.findIndex((s) => s.id === sc.from), ti = STOPS.findIndex((s) => s.id === sc.to);
+    const shortcuts = shortcutsFor(map, STOPS);
+    shortcuts.forEach((sc) => {
+      const fi =STOPS.findIndex((s) => s.id === sc.from), ti = STOPS.findIndex((s) => s.id === sc.to);
       const bctrl = [ctrl[stopIdx[fi] - 1], STOPS[fi].at].concat(sc.via, [STOPS[ti].at, ctrl[stopIdx[ti] + 1]]);
       const curvePts = curve(bctrl, 1, bctrl.length - 2, 30);
       const pts = evenly(curvePts, sc.n);
@@ -164,7 +233,7 @@
       });
     })();
 
-    return { nodes, roads, stopNode, stops: STOPS, length: length || 'normal', start: nodes[0].id, finish: finish.id, longCount, dist, W, H };
+    return { nodes, roads, stopNode, stops: STOPS, shortcuts, map: map || 'classic', length: length || 'normal', start: nodes[0].id, finish: finish.id, longCount, dist, W, H };
   }
 
   /* ============================================================
@@ -314,6 +383,7 @@
   function dress(geo, opts) {
     opts = opts || {};
     const nodes = geo.nodes;
+    const SER = geo.map === 'serpent' || geo.map === 'southern';
     const season = SEASONS[pick(Object.keys(SEASONS))];
     const time = TIMES[pick(Object.keys(TIMES))];
 
@@ -375,6 +445,7 @@
     // Bag End
     land(58, 150, wrap(58, 150, 1, 'rx rx-door', hobbitHole(pick(['#3f7d3a', '#2f6b48', '#3b6f2c'])) + chimney(30, 104), rx('door', 58, 140, 120)));
     reserve(58, 125, 62);
+    if (!SER) {
     // a couple of neighbours' holes
     land(205, 60, wrap(205, 60, 1, 'rx rx-door', hobbitHole(pick(['#c8433a', '#d49a22', '#3c6fb0'])), rx('door', 205, 50, 90)) + '');
     reserve(205, 45, 40);
@@ -461,9 +532,11 @@
       '<g class="swing"><path d="M27,-22 Q32,-10 26,-2" stroke="#9a9286" stroke-width="4" fill="none" stroke-linecap="round"/></g>' +
       '<path d="M23,-18 q6,2 10,-2" stroke="#fffbe8" stroke-width="2" fill="none"/><circle cx="21" cy="-27" r="1.3" fill="#2a2420"/>', rx('trunk', 1148, 758, 120)));
     reserve(1148, 752, 30);
+    }
     // Mordor: a dark land walled by mountains
     land(540, '<path d="M1318,548 Q1420,532 1600,536 L1600,920 L1312,920 Q1300,760 1318,548 Z" fill="#4a332b" opacity=".85"/>' +
       '<path d="M1340,580 Q1460,560 1600,566 L1600,920 L1336,920 Z" fill="#5a3a2c" opacity=".55"/>');
+    if (!SER) {
     // Minas Morgul
     land(1214, 772, wrap(1214, 772, 1, 'rx rx-glow', tower(16, 58, '#8a8f86', '#6f746b', '#7dff9c') +
       '<ellipse class="glow" cx="0" cy="-60" rx="14" ry="22" fill="#7dff9c" opacity=".25"/>', rx('glow', 1214, 740, 120)));
@@ -477,6 +550,36 @@
       '<path d="M-4,-30 l-7,-5 M-4,-27 l-8,1 M-4,-25 l-6,5 M4,-30 l7,-5 M4,-27 l8,1 M4,-25 l6,5" stroke="#2a1e1a" stroke-width="1.4"/>' +
       '<circle cx="-1.6" cy="-26" r=".9" fill="#ff5a3c"/><circle cx="1.6" cy="-26" r=".9" fill="#ff5a3c"/></g>', rx('spider', 1392, 700, 110)));
     reserve(1392, 696, 26);
+    }
+    if (SER) {
+      // Serpent: the same kinds of places, drawn on their new stops
+      const place = (id, dx, dy, svg) => { if (!geo.stopNode[id]) return; const x = geo.stopNode[id].x + dx, y = geo.stopNode[id].y + dy; land(y, wrap(x, y, 1, '', svg)); };
+      place('maggot', -40, 14, house(26, 16, '#e9dcc0', '#9a6a3a'));
+      place('bree', 46, -8, house(30, 20, '#e2cfa6', '#7d4a2a'));
+      place('bree', 78, -2, house(24, 16, '#d8c49b', '#8a5634'));
+      place('weathertop', 0, 40, '<path d="M-110,0 C-80,-14 -60,-70 -18,-92 C0,-100 18,-100 36,-90 C74,-66 90,-16 110,0 Z" fill="#b9a97c" stroke="#7a6640" stroke-width="1.6"/>');
+      place('weathertop', 0, -16, '<rect x="-34" y="-12" width="6" height="14" fill="#a39d8f"/><rect x="-22" y="-18" width="6" height="18" fill="#b0aa9b"/><rect x="34" y="-14" width="6" height="14" fill="#a39d8f"/><rect x="46" y="-8" width="5" height="8" fill="#b0aa9b"/>');
+      place('weathertop', 62, -22, '<path d="M-6,0 L6,0" stroke="#5a3d22" stroke-width="2.4"/><g class="flame"><path d="M-5,-1 Q-6,-9 0,-16 Q6,-9 5,-1 Z" fill="#f08a24"/><path d="M-2.5,-1 Q-3,-6 0,-10 Q3,-6 2.5,-1 Z" fill="#ffd34d"/></g>');
+      place('rivendell', -34, 4, elfHouse(22, 18));
+      place('rivendell', 6, 2, elfHouse(18, 24));
+      place('rivendell', -58, -92, '<path d="M-6,0 Q-8,40 -4,92 L6,92 Q8,40 6,0 Z" fill="#9fd0ec"/><path class="flow" d="M0,0 V92" stroke="#e8f6ff" stroke-width="3" stroke-dasharray="6 7" fill="none"/><ellipse cx="0" cy="94" rx="16" ry="5" fill="#b6def2"/>');
+      place('durin', 0, -6, '<path d="M-36,0 L-30,-58 L-6,-74 L22,-66 L34,-40 L36,0 Z" fill="#8f8a80" stroke="#5f5a50" stroke-width="1.4"/>');
+      place('durin', 0, -8, '<path d="M-13,0 V-24 Q0,-42 13,-24 V0" fill="#3b3a3f"/><path class="glow" d="M-13,0 V-24 Q0,-42 13,-24 V0 M-9,-26 L9,-26 M0,-34 l-3,6 h6 Z M-10,-6 v-14 M10,-6 v-14" stroke="#cfe7ff" stroke-width="1.4" fill="none"/>');
+      place('durin', -44, 54, '<ellipse cx="0" cy="0" rx="40" ry="14" fill="#36505e" stroke="#26363f" stroke-width="1.4"/><ellipse cx="-7" cy="-2" rx="28" ry="8" fill="#46687a" opacity=".6"/>');
+      place('lorien', 0, -10, '<ellipse cx="0" cy="-20" rx="110" ry="80" fill="#f7d774" opacity=".18"/>');
+      place('lorien', 40, -10, '<g class="glints">' + [[-20, -60], [6, -78], [24, -52], [-4, -40], [14, -66]].map((p) => '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="2.2" fill="#fff6c4"/>').join('') + '</g>');
+      place('amonhen', 0, 8, '<path d="M-46,0 Q-26,-40 0,-44 Q26,-40 46,0 Z" fill="#a6b07a" stroke="#6f7444" stroke-width="1.4"/><rect x="-7" y="-52" width="14" height="10" fill="#bdb6a6" stroke="#6b665c"/><rect x="-9" y="-44" width="18" height="3" fill="#a8a192"/>');
+      place('emynmuil', -20, 6, rock('#a7a297', '#857f72', 1.3));
+      place('emynmuil', 14, 10, rock('#a7a297', '#857f72', 1));
+      place('emynmuil', 34, 2, rock('#a7a297', '#857f72', 0.8));
+      place('marshes', -30, 10, '<ellipse cx="0" cy="0" rx="30" ry="9" fill="#6f7f62" stroke="#4f5a44" stroke-width="1"/>');
+      place('marshes', 26, -2, '<ellipse cx="0" cy="0" rx="22" ry="7" fill="#6f7f62" stroke="#4f5a44" stroke-width="1"/>');
+      place('marshes', 0, -4, [[-30, -4], [24, -16], [-18, -30], [10, -40]].map((p, i) => '<circle class="marsh-light" style="animation-delay:' + (i * 0.7) + 's" cx="' + p[0] + '" cy="' + p[1] + '" r="3.2" fill="#d6ffb8"/>').join(''));
+      place('ithilien', 0, -12, shadow(20) + '<path d="M-16,0 v-12 M-8,0 v-12 M8,0 v-12 M15,0 v-12" stroke="#8d8579" stroke-width="5"/><ellipse cx="0" cy="-20" rx="21" ry="13" fill="#9a9286"/><circle cx="20" cy="-24" r="9" fill="#9a9286"/><path d="M18,-28 L-6,-36 L-4,-30 Z" fill="#c7313a"/><path d="M27,-22 Q32,-10 26,-2" stroke="#9a9286" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M23,-18 q6,2 10,-2" stroke="#fffbe8" stroke-width="2" fill="none"/><circle cx="21" cy="-27" r="1.3" fill="#2a2420"/>');
+      place('morgul', 0, 0, tower(16, 58, '#8a8f86', '#6f746b', '#7dff9c') + '<ellipse class="glow" cx="0" cy="-60" rx="14" ry="22" fill="#7dff9c" opacity=".25"/>');
+      place('ungol', -8, 0, tower(14, 44, '#6e665e', null, '#ffb25a'));
+      place('ungol', 46, -6, '<g class="spider"><ellipse cx="0" cy="-12" rx="5" ry="6" fill="#2a1e1a"/><path d="M-4,-13 l-7,-5 M-4,-10 l-8,1 M4,-13 l7,-5 M4,-10 l8,1" stroke="#2a1e1a" stroke-width="1.4"/></g>');
+    }
     // Barad-dûr and the Eye
     land(600, wrap(1566, 604, 1, '', '<path d="M-20,0 L-13,-110 L-6,-118 L-4,-150 L4,-150 L6,-118 L13,-110 L20,0 Z" fill="#2c2420" stroke="#120d0b" stroke-width="1.2"/>' +
       '<path d="M-4,-150 L-12,-170 M4,-150 L12,-170" stroke="#2c2420" stroke-width="4" stroke-linecap="round"/>' +
@@ -499,6 +602,7 @@
     // smoke above Mount Doom
     land(700, '<g>' + [0, 1, 2, 3].map((i) => '<circle class="doom-smoke" style="animation-delay:' + (i * 1.6) + 's" cx="' + (1480 + i * 3) + '" cy="740" r="14" fill="#5c514c"/>').join('') + '</g>');
     reserve(1480, 820, 70);
+    if (!SER) {
     // Isengard
     land(690, 570, wrap(690, 570, 1, '', '<ellipse cx="0" cy="-4" rx="34" ry="12" fill="none" stroke="#6f6a60" stroke-width="4"/>' +
       '<path d="M-6,-4 L-5,-58 L-9,-70 L-2,-64 L0,-74 L2,-64 L9,-70 L5,-58 L6,-4 Z" fill="#2e2b2a" stroke="#111" stroke-width="1"/>'));
@@ -512,9 +616,12 @@
     land(150, wrap(1500, 150, 1, 'mtn', mountainSVG(200, 120, { fill: '#b9a98c', shade: '#978566' })));
     reserve(1500, 100, 80);
 
+    }
+
     /* ---- mountain ranges ---- */
-    range([[1108, 40], [1132, 120], [1196, 290], [1186, 360], [1208, 470], [1176, 560]], 34, [52, 84], { snow: true, fill: '#c8bba3', shade: '#a4957a', ignore: 'moria' });
-    range([[612, 640], [700, 628], [800, 618], [880, 610]], 34, [44, 66], { snow: true, fill: '#c9bea6', shade: '#a99a7e' });
+    if (!SER) range([[1108, 40], [1132, 120], [1196, 290], [1186, 360], [1208, 470], [1176, 560]], 34, [52, 84], { snow: true, fill: '#c8bba3', shade: '#a4957a', ignore: 'moria' });
+    if (SER) range([[1040, 330], [1080, 270], [1130, 200], [1170, 130]], 34, [46, 70], { snow: true, fill: '#c8bba3', shade: '#a4957a' });
+    if (!SER) range([[612, 640], [700, 628], [800, 618], [880, 610]], 34, [44, 66], { snow: true, fill: '#c9bea6', shade: '#a99a7e' });
     range([[1326, 562], [1420, 548], [1520, 546]], 30, [40, 60], { fill: '#4a3b34', shade: '#2f2521', line: '#1a1210' });
     range([[1312, 600], [1302, 700], [1306, 800], [1300, 910]], 30, [40, 58], { fill: '#4a3b34', shade: '#2f2521', line: '#1a1210' });
 
@@ -584,7 +691,7 @@
   }
 
   /* ---------- the parts of the map that are the same every game ---------- */
-  function terrainHTML() {
+  function terrainHTML(map) {
     const river = (pts, w) => {
       const c = curve(pts, 0, pts.length - 1, 16);
       const d = pathD(c);
@@ -604,21 +711,29 @@
       '<ellipse cx="970" cy="650" rx="120" ry="70" fill="#c2b9a2"/>' +
       '</g>' +
       // rivers: the Brandywine and the Anduin
-      river([[486, -10], [470, 150], [462, 300], [440, 420], [418, 500], [430, 640], [470, 780], [500, 930]], 9) +
-      river([[1352, -10], [1350, 180], [1344, 330], [1336, 470], [1290, 562], [1220, 622], [1192, 648], [1120, 712], [1062, 792], [1036, 930]], 11) +
+      (map === 'southern'
+        ? river([[252, -10], [262, 120], [282, 250], [302, 350], [330, 450], [356, 560], [376, 700], [360, 820], [334, 930]], 9) +
+          river([[1440, -10], [1420, 180], [1400, 300], [1380, 420], [1340, 520], [1300, 620], [1262, 720], [1210, 930]], 11)
+        : map === 'serpent'
+        ? river([[318, -10], [326, 140], [336, 250], [364, 330], [384, 420], [350, 520], [320, 640], [336, 780], [330, 930]], 9) +
+          river([[1400, -10], [1380, 150], [1340, 260], [1300, 340], [1250, 420], [1200, 520], [1130, 620], [1070, 740], [1040, 930]], 11)
+        : river([[486, -10], [470, 150], [462, 300], [440, 420], [418, 500], [430, 640], [470, 780], [500, 930]], 9) +
+          river([[1352, -10], [1350, 180], [1344, 330], [1336, 470], [1290, 562], [1220, 622], [1192, 648], [1120, 712], [1062, 792], [1036, 930]], 11)) +
       // Shire hills
       '<g fill="#9cc06c" stroke="#77984c" stroke-width="1.2" opacity=".85">' +
       '<path d="M150,290 Q190,250 230,290 Z"/><path d="M40,300 Q90,250 140,300 Z"/><path d="M300,120 Q340,84 380,120 Z"/><path d="M300,380 Q330,350 370,380 Z" />' +
       '</g>';
   }
 
-  function cartoucheHTML() {
+  function cartoucheHTML(mapName) {
     return '<g class="cartouche" transform="translate(40,700)">' +
       '<path d="M10,0 H330 Q340,0 340,10 V150 Q340,160 330,160 H10 Q0,160 0,150 V10 Q0,0 10,0 Z" fill="#f3e6c4" stroke="#7a5a32" stroke-width="2.4"/>' +
       '<path d="M18,10 H322 Q330,10 330,18 V142 Q330,150 322,150 H18 Q10,150 10,142 V18 Q10,10 18,10 Z" fill="none" stroke="#a37a3e" stroke-width="1" stroke-dasharray="2 3"/>' +
       '<text x="170" y="66" text-anchor="middle" class="map-title">Hobbit Land</text>' +
       '<text x="170" y="98" text-anchor="middle" class="map-sub">From the Shire to Mount Doom</text>' +
-      '<g transform="translate(170,126)"><circle r="11" fill="none" stroke="#d4a72c" stroke-width="4"/><circle r="11" fill="none" stroke="#fff3b0" stroke-width="1" opacity=".7"/></g>' +
+      '<g transform="translate(46,126)"><circle r="11" fill="none" stroke="#d4a72c" stroke-width="4"/><circle r="11" fill="none" stroke="#fff3b0" stroke-width="1" opacity=".7"/></g>' +
+      '<g transform="translate(294,126)"><circle r="11" fill="none" stroke="#d4a72c" stroke-width="4"/><circle r="11" fill="none" stroke="#fff3b0" stroke-width="1" opacity=".7"/></g>' +
+      '<text x="170" y="132" text-anchor="middle" class="map-sub map-name">' + (mapName ? mapName + ' Map' : '') + '</text>' +
       '</g>' +
       '<g class="compass" transform="translate(612,800)">' +
       '<circle r="34" fill="#f3e6c4" stroke="#7a5a32" stroke-width="1.6" opacity=".9"/>' +
@@ -627,21 +742,45 @@
       '<text y="-38" text-anchor="middle" class="map-label small">N</text></g>';
   }
 
+  // Place names moved so no road space covers them. Stops: [dx, dy, anchor] from the stop.
+  // Shortcuts: [x, y] on the map.
+  const LABEL_FIX = {
+    classic: { maggot: [0, -34, 'middle'], bree: [-29, -17, 'end'], rivendell: [-29, 50, 'end'], amonhen: [-40, -23, 'end'], ithilien: [29, -17, 'start'], marshes: [-29, -17, 'end'] },
+    serpent: { bagend: [-23, 40, 'end'], bree: [-29, -17, 'end'], rivendell: [-34, 0, 'end'], amonhen: [17, -29, 'start'], ithilien: [-17, -29, 'end'], marshes: [23, 40, 'start'],
+      'c:ferry': [350, 419], 'c:moria': [1085, 285] },
+    southern: { maggot: [-17, -29, 'end'], bree: [-50, -29, 'end'], weathertop: [0, 46, 'middle'], rivendell: [-34, 0, 'end'], lorien: [29, 17, 'start'],
+      amonhen: [-17, -29, 'end'], morgul: [0, 58, 'middle'], ungol: [-17, -29, 'end'], emynmuil: [-50, -29, 'end'], marshes: [-29, -17, 'end'],
+      ithilien: [-17, -92, 'middle'], 'ithilien@short': [-40, -4, 'end'],
+      'c:ferry': [415, 315], 'c:moria': [963, 224] }
+  };
+
   function labelsHTML(geo) {
     let s = '';
+    const fix = LABEL_FIX[geo.map] || {};
     geo.stops.forEach((st) => {
+      if (geo.map === 'serpent' && st.id === 'marshes') return;   // Serpent names the marshes in the middle of the oval
       const n = geo.stopNode[st.id];
-      s += '<text class="map-label" x="' + f1(n.x + st.label[0]) + '" y="' + f1(n.y + st.label[1]) + '" text-anchor="' + (st.anchor || 'middle') + '">' + st.name + '</text>';
+      const f = fix[st.id + '@' + geo.length] || fix[st.id];
+      const dx = f ? f[0] : st.label[0], dy = f ? f[1] : st.label[1], an = f ? f[2] : (st.anchor || 'middle');
+      s += '<text class="map-label" x="' + f1(n.x + dx) + '" y="' + f1(n.y + dy) + '" text-anchor="' + an + '">' + st.name + '</text>';
     });
     // places the short road skips keep their names on the map
-    if (!geo.stops.some((st) => st.id === 'marshes')) s += '<text class="map-label region" x="790" y="836" text-anchor="middle">Dead Marshes</text>';
-    if (!geo.stops.some((st) => st.id === 'emynmuil')) s += '<text class="map-label region" x="960" y="642" text-anchor="middle">Emyn Muil</text>';
-    SHORTCUTS.forEach((sc) => {
-      s += '<text class="map-label short" x="' + sc.label[0] + '" y="' + sc.label[1] + '" text-anchor="middle">' + sc.name + '</text>';
+    const ser = geo.map === 'serpent';
+    if (ser) s += '<text class="map-label region" x="740" y="870" text-anchor="middle">Dead Marshes</text>';
+    else if (geo.map === 'southern' && !geo.stops.some((st) => st.id === 'marshes')) s += '<text class="map-label region" x="1154" y="612" text-anchor="middle">Dead Marshes</text>';
+    else if (!geo.stops.some((st) => st.id === 'marshes')) s += '<text class="map-label region" x="790" y="836" text-anchor="middle">Dead Marshes</text>';
+    if (geo.map === 'southern' && !geo.stops.some((st) => st.id === 'emynmuil')) s += '<text class="map-label region" x="1430" y="470" text-anchor="middle">Emyn Muil</text>';
+    else if (!geo.stops.some((st) => st.id === 'emynmuil')) s += '<text class="map-label region" x="' + (ser ? 1000 : 960) + '" y="' + (ser ? 600 : 642) + '" text-anchor="middle">Emyn Muil</text>';
+    (geo.shortcuts || SHORTCUTS).forEach((sc) => {
+      const f = fix['c:' + sc.id];
+      const x = f ? f[0] : sc.label[0], y = f ? f[1] : sc.label[1];
+      s += '<text class="map-label short" x="' + x + '" y="' + y + '" text-anchor="middle">' + sc.name + '</text>';
     });
     [['Old Forest', 470, 372], ['Barrow-downs', 410, 600], ['Caradhras', 1160, 62], ['Fangorn', 925, 556], ['Rohan', 700, 400], ['Isengard', 690, 594], ['Mirkwood', 1490, 170],
       ['Mordor', 1440, 600], ['Anduin', 1365, 250], ['The Shire', 160, 38], ['Barad-dûr', 1566, 640], ['Black Gate', 1360, 520], ['Misty Mountains', 1240, 30], ['Trollshaws', 884, 302]].forEach((l) => {
-      s += '<text class="map-label region" x="' + l[1] + '" y="' + l[2] + '" text-anchor="middle">' + l[0] + '</text>';
+      if (geo.map !== 'classic' && !['Mordor', 'Barad-dûr', 'Black Gate', 'Mirkwood', 'The Shire', 'Misty Mountains', 'Anduin'].includes(l[0])) return;
+      const p = (geo.map === 'southern' && { Anduin: [1367, 242], 'Black Gate': [1372, 541] }[l[0]]) || [l[1], l[2]];
+      s += '<text class="map-label region" x="' + p[0] + '" y="' + p[1] + '" text-anchor="middle">' + l[0] + '</text>';
     });
     return s;
   }
@@ -655,5 +794,5 @@
     }).join('');
   }
 
-  window.HL_BOARD = { W, H, STOPS, SHORTCUTS, build, dress, terrainHTML, cartoucheHTML, labelsHTML, roadHTML };
+  window.HL_BOARD = { W, H, STOPS, SHORTCUTS, MAPS, build, dress, terrainHTML, cartoucheHTML, labelsHTML, roadHTML };
 })();
