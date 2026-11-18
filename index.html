@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&display=swap">
   <!-- When any file below changes, change the ?v= tag on all of them so browsers fetch the new copies. -->
-  <link rel="stylesheet" href="styles.css?v=2026-12-02b">
+  <link rel="stylesheet" href="styles.css?v=2026-12-03c">
 </head>
 <body>
   <div class="backdrop" aria-hidden="true"></div>
@@ -58,13 +58,18 @@
 
 
       <section class="panel" id="auto-panel" aria-labelledby="h-auto">
-        <div class="panel-head">
-          <h2 id="h-auto">Auto-tap Computer Cards</h2>
+        <h2 id="h-auto" class="comp-title">Computer Settings</h2>
+        <div class="panel-head comp-row">
+          <h3 class="sub-h">Auto-tap</h3>
           <div class="segmented" id="auto-tap" role="radiogroup" aria-label="Tap Continue for computer players"></div>
         </div>
-        <div class="panel-head" id="auto-secs-row" hidden>
-          <h2 class="sub-h">Show each card for</h2>
+        <div class="panel-head comp-row" id="auto-secs-row">
+          <h3 class="sub-h">Speed</h3>
           <div class="segmented" id="auto-secs" role="radiogroup" aria-label="How long a computer's card stays up"></div>
+        </div>
+        <div class="panel-head comp-row">
+          <h3 class="sub-h">Dice Roll</h3>
+          <div class="segmented" id="cpu-dice" role="radiogroup" aria-label="Show the dice roll on computer turns"></div>
         </div>
       </section>
 
@@ -170,6 +175,6 @@
   <script src="hobbits.js?v=2026-11-17c"></script>
   <script src="cards.js?v=2026-11-30a"></script>
   <script src="board.js?v=2026-11-30a"></script>
-  <script src="game.js?v=2026-12-02b"></script>
+  <script src="game.js?v=2026-12-03f"></script>
 </body>
 </html>

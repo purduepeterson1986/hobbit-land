@@ -23,8 +23,9 @@
     map: 'random',      // which map: random, or one of MAP_IDS
     sound: true,
     diceSound: true,    // the dice rolling sound on its own
-    autoTap: false,     // computer players tap Continue on their own
-    autoSecs: 5         // how long a computer's card stays up before that (2, 5 or 10)
+    autoTap: true,      // computer players tap Continue on their own
+    autoSecs: 10,       // how long a computer's card stays up before that (0, 2, 5 or 10; 0 = the card isn't shown)
+    cpuDice: true       // computer turns show the die tumbling (false: it just lands on the number)
   };
   const LENGTH_IDS = ['short', 'normal', 'long'];
   const MAP_IDS = ['classic', 'serpent', 'southern', 'river'];
@@ -44,7 +45,8 @@
       if (typeof saved.sound === 'boolean') settings.sound = saved.sound;
       if (typeof saved.diceSound === 'boolean') settings.diceSound = saved.diceSound;
       if (typeof saved.autoTap === 'boolean') settings.autoTap = saved.autoTap;
-      if ([2, 5, 10].includes(saved.autoSecs)) settings.autoSecs = saved.autoSecs;
+      if ([0, 2, 5, 10].includes(saved.autoSecs)) settings.autoSecs = saved.autoSecs;
+      if (typeof saved.cpuDice === 'boolean') settings.cpuDice = saved.cpuDice;
     }
   } catch (e) { /* storage unavailable: defaults are fine */ }
   const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } };
@@ -134,6 +136,7 @@
   const elAuto = $('#auto-tap');
   const elAutoSecs = $('#auto-secs');
   const elAutoSecsRow = $('#auto-secs-row');
+  const elCpuDice = $('#cpu-dice');
   const elSummary = $('#summary');
 
   function buildSetup() {
@@ -161,8 +164,16 @@
 
     elAuto.innerHTML = '<button type="button" class="seg" role="radio" data-auto="off">Off</button>' +
       '<button type="button" class="seg" role="radio" data-auto="on">On</button>';
-    elAutoSecs.innerHTML = [2, 5, 10].map((s) =>
+    elAutoSecs.innerHTML = [0, 2, 5, 10].map((s) =>
       '<button type="button" class="seg" role="radio" data-secs="' + s + '">' + s + ' sec</button>').join('');
+    elCpuDice.innerHTML = '<button type="button" class="seg" role="radio" data-dice="off">Off</button>' +
+      '<button type="button" class="seg" role="radio" data-dice="on">On</button>';
+    elCpuDice.addEventListener('click', (e) => {
+      const b = e.target.closest('.seg');
+      if (!b) return;
+      settings.cpuDice = b.dataset.dice === 'on';
+      Sound.click(); refreshSetup(); save();
+    });
     elAuto.addEventListener('click', (e) => {
       const b = e.target.closest('.seg');
       if (!b) return;
@@ -223,7 +234,10 @@
     mark(elMap, 'data-map', settings.map);
     mark(elAuto, 'data-auto', settings.autoTap ? 'on' : 'off');
     mark(elAutoSecs, 'data-secs', settings.autoSecs);
-    elAutoSecsRow.hidden = !settings.autoTap;
+    mark(elCpuDice, 'data-dice', settings.cpuDice ? 'on' : 'off');
+    // Speed only matters with Auto-tap on, so it is dimmed (and can't be pressed) while Auto-tap is off.
+    elAutoSecsRow.classList.toggle('dim', !settings.autoTap);
+    elAutoSecs.querySelectorAll('.seg').forEach((b) => { b.disabled = !settings.autoTap; });
     // Auto-tap only matters when a seat is a computer player, so the section is shown only then.
     const anyCpu = Array.from({ length: settings.players }, (_, i) => isCpu(i)).some(Boolean);
     $('#auto-panel').hidden = !anyCpu;
@@ -2150,9 +2164,20 @@
     const base = cur + extra;
     return base + ((((target - base) % 360) + 360) % 360);
   }
-  function rollDie(v) {
-    if (settings.diceSound) Sound.dice();
+  function rollDie(v, instant) {
     const [tx, ty] = FACE_ROT[v];
+    if (instant) {
+      // Dice Roll off (computer turns): the die simply shows the number, with no tumble.
+      dieRot.x = spinTo(dieRot.x, tx, 0);
+      dieRot.y = spinTo(dieRot.y, ty, 0);
+      elDie.style.transition = 'none';
+      elDie.style.transform = 'rotateX(' + dieRot.x + 'deg) rotateY(' + dieRot.y + 'deg)';
+      elDie.setAttribute('data-value', v);
+      void elDie.offsetWidth;
+      elDie.style.transition = '';
+      return sleep(150);
+    }
+    if (settings.diceSound) Sound.dice();
     dieRot.x = spinTo(dieRot.x, tx, 720);
     dieRot.y = spinTo(dieRot.y, ty, 360);
     elDieWrap.classList.remove('toss'); void elDieWrap.offsetWidth; elDieWrap.classList.add('toss');
@@ -2258,7 +2283,7 @@
       const bonus = p.bonus || 0;
       const steps = Math.max(1, v + bonus - pull);   // always at least 1 space
       setStatus(p, 'rolls…');
-      await rollDie(v);
+      await rollDie(v, p.cpu && !settings.cpuDice);
       guard(g);
       p.bonus = 0;
       updatePlayers();
@@ -2539,6 +2564,16 @@
   };
   function showCard(p, card, g) {
     return new Promise((resolve) => {
+      const cardSound = () => {
+        if (card.kind === 'special') (card.special === 'skip' ? Sound.bad() : Sound.win());
+        else (card.kind === 'forward' ? Sound.good() : card.kind === 'back' ? Sound.bad() : Sound.stay());
+      };
+      // Auto-tap at 0 seconds: a computer's card isn't shown at all; the move just happens.
+      if (settings.autoTap && settings.autoSecs === 0 && isCpu(p.seat)) {
+        cardSound();
+        resolve();
+        return;
+      }
       openModal(
         '<div class="card-who">' + HB.portrait(p.h, 'cw-face') + '<span><b style="color:' + p.h.color + '">' + esc(p.name) + '</b> turns over a card</span></div>' +
         '<div class="play-card k-' + card.kind + (card.special ? ' sp-' + card.special : '') + '">' +
@@ -2554,18 +2589,18 @@
         'card-modal'
       );
       // Computer players may have Continue tapped for them after the chosen time. People always tap it themselves.
+      // The countdown starts once the card has finished flipping over (.7s in styles.css), so the card sits still for the full time.
       const shown = elModal.querySelector('.play-card');
       if (settings.autoTap && isCpu(p.seat)) {
         setTimeout(() => {
           if (g !== gen || modalKind !== 'card-modal' || elModal.querySelector('.play-card') !== shown) return;
           const btn = elModal.querySelector('.modal-actions .btn.primary');
           if (btn) btn.click();
-        }, settings.autoSecs * 1000);
+        }, 700 + settings.autoSecs * 1000);
       }
       setTimeout(() => {
         if (g !== gen) return;
-        if (card.kind === 'special') (card.special === 'skip' ? Sound.bad() : Sound.win());
-        else (card.kind === 'forward' ? Sound.good() : card.kind === 'back' ? Sound.bad() : Sound.stay());
+        cardSound();
       }, 380);
     });
   }

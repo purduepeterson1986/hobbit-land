@@ -51,7 +51,9 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
 - **Players:** 2, 3 or 4, each a Person or the Computer. Picking a hobbit another player already has swaps the two.
 - **Map length:** Short, Normal or Long (see the table above).
 - **Map:** Random (the default: a different map is picked every game), Classic (the road described above), Serpent (a zig-zag road across the map), South (a road that runs south first) or River (by boat down the Anduin). They share the same stops, forks, rest stops and lengths. The start message says which map is in play.
-- **Auto-tap Computer Cards:** off by default, so a card on a computer's turn waits for someone to press Continue. Turn it **On** and choose how long each card stays up (2, 5 or 10 seconds) before Continue is tapped automatically. This applies to computer players only; people always press Continue themselves.
+- **Computer Settings** (shown when any player is the Computer; they apply to computer players only):
+  - **Auto-tap:** On by default. Choose a **Speed**: how long each card stays up (0, 2, 5 or 10 seconds; 10 by default) before Continue is tapped automatically. Turn Auto-tap **Off** and a card on a computer's turn waits for someone to press Continue (Speed is dimmed then). At 0 seconds the card isn't shown at all: the computer's hobbit just makes the card's move. People always press Continue themselves.
+  - **Dice Roll:** On (the default) shows the die tumbling on a computer's turn. Off makes the die simply show the number, so computer turns go quicker.
 - Settings are remembered between visits. Win counts are kept while you press **Next game**, and start again when you go back to the settings.
 
 ## Changing the cards
