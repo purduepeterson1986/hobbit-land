@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&display=swap">
   <!-- When any file below changes, change the ?v= tag on all of them so browsers fetch the new copies. -->
-  <link rel="stylesheet" href="styles.css?v=2026-11-29b">
+  <link rel="stylesheet" href="styles.css?v=2026-11-30e">
 </head>
 <body>
   <div class="backdrop" aria-hidden="true"></div>
@@ -45,19 +45,15 @@
         <p class="hint">Each player chooses a hobbit. Set any player to Computer to have the game play that hobbit.</p>
       </section>
 
-      <section class="panel" aria-labelledby="h-length">
-        <div class="panel-head">
-          <h2 id="h-length">Road length</h2>
-          <div class="segmented" id="road-length" role="radiogroup" aria-label="Road length"></div>
-        </div>
-      </section>
-
-      <section class="panel" aria-labelledby="h-map">
-        <div class="panel-head">
+      <section class="panel pick-row" aria-label="Map and road length">
+        <div class="pick-col">
           <h2 id="h-map">Map</h2>
-          <div class="segmented small" id="map-pick" role="radiogroup" aria-label="Map"></div>
+          <div class="segmented small" id="map-pick" role="radiogroup" aria-labelledby="h-map"></div>
         </div>
-        <p class="hint">Random picks a different map every game. River goes by boat down the Anduin from Lothlórien to Amon Hen, and stopping on a plain boat drifts you 1 space on.</p>
+        <div class="pick-col right">
+          <h2 id="h-length">Road length</h2>
+          <div class="segmented small" id="road-length" role="radiogroup" aria-labelledby="h-length"></div>
+        </div>
       </section>
 
 
@@ -172,8 +168,8 @@
   <canvas id="confetti" aria-hidden="true"></canvas>
 
   <script src="hobbits.js?v=2026-11-17c"></script>
-  <script src="cards.js?v=2026-11-17i"></script>
-  <script src="board.js?v=2026-11-28b"></script>
-  <script src="game.js?v=2026-11-29d"></script>
+  <script src="cards.js?v=2026-11-30a"></script>
+  <script src="board.js?v=2026-11-30a"></script>
+  <script src="game.js?v=2026-11-30i"></script>
 </body>
 </html>

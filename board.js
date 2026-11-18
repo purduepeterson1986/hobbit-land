@@ -1085,12 +1085,17 @@
   // which land each space stands in, plus the long road in order (worked out once per board)
   function landOf(geo) {
     if (geo.land) return geo.land;
-    const N = geo.nodes, land = {}, order = [];
+    const N = geo.nodes, land = {}, leg = {}, order = [];
     for (let n = N[geo.start]; n; n = n.next != null ? N[n.next] : null) order.push(n);
-    let cur = 'mordor';
-    for (let i = order.length - 1; i >= 0; i--) { if (order[i].stop) cur = landFor(order[i].stop, geo.map) || cur; land[order[i].id] = cur; }
-    N.forEach((m) => { if (m.route !== 'main') land[m.id] = m.route === 'ferry' ? 'ferry' : 'moria'; });
+    let cur = 'mordor', to = 'doom';
+    for (let i = order.length - 1; i >= 0; i--) {
+      if (order[i].stop) { cur = landFor(order[i].stop, geo.map) || cur; to = order[i].stop; }
+      land[order[i].id] = cur;
+      leg[order[i].id] = to;   // the stop this stretch of road leads to (a stop counts as its own stretch)
+    }
+    N.forEach((m) => { if (m.route !== 'main') land[m.id] = leg[m.id] = m.route === 'ferry' ? 'ferry' : 'moria'; });
     geo.land = land;
+    geo.leg = leg;   // where a hobbit is on the journey, used to pick card sentences that fit the place
     geo.longRoad = order;
     return land;
   }

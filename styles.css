@@ -150,6 +150,16 @@ h1, h2, p { margin: 0; }
 .seg.selected { background: var(--gold); color: #2a1a00; box-shadow: 0 4px 12px rgba(240, 170, 40, .3); }
 .segmented.small .seg { min-width: 0; min-height: 42px; font-size: .95rem; padding: 0 14px; }
 
+/* Map (left) and Road length (right) share one panel */
+.pick-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px 24px; flex-wrap: wrap; }
+.pick-col { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.pick-col.right { align-items: flex-end; text-align: right; }
+@media (max-width: 640px) {
+  .pick-col, .pick-col.right { align-items: stretch; text-align: left; flex: 1 1 100%; }
+  .pick-col .segmented { display: flex; gap: 2px; }
+  .pick-col .segmented .seg { flex: 1 1 auto; padding: 0 4px; font-size: .84rem; }
+}
+
 .seats { display: grid; gap: 10px; }
 .seat {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
@@ -354,6 +364,25 @@ h1, h2, p { margin: 0; }
 
 /* ---- effects ---- */
 /* visitors walking or riding across the map */
+/* chases: runners move frame by frame; their legs go faster than a walk */
+.chaser .trot { animation-duration: .16s; }
+.chaser .leg-a, .chaser .leg-b { animation-duration: .2s; }
+.chaser.still .trot, .chaser.still .leg-a, .chaser.still .leg-b { animation: none; }
+.ch-bubble { animation: ch-pop .25s ease-out both; }
+@keyframes ch-pop { from { opacity: 0; transform: translateY(4px); } }
+.chase-bush { animation: bush-in .6s ease both; }
+@keyframes bush-in { from { opacity: 0; } }
+.chase-bush.shaking .bush-shake { animation: bush-shake .12s ease-in-out 6 alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes bush-shake { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
+/* the moving scenes on forward / back / stay cards */
+.bf-wings { animation: bf-flap .14s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+@keyframes bf-flap { to { transform: scaleX(.25); } }
+.rain-cloud { animation: cloud-bob 1.2s ease-in-out infinite alternate; }
+@keyframes cloud-bob { to { transform: translateX(3px); } }
+.rain-drop { animation: rain-fall .55s linear infinite; opacity: 0; }
+@keyframes rain-fall { 0% { opacity: 0; transform: translate(0, 0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(-4px, 20px); } }
+.zzz { font-family: var(--serif); font-weight: 800; fill: #f6f0dc; stroke: #3a3a5a; stroke-width: 2px; paint-order: stroke; animation: zzz-up 1.6s ease-out infinite; opacity: 0; }
+@keyframes zzz-up { 0% { opacity: 0; transform: translate(0, 0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(8px, -22px); } }
 .walker { animation: walk var(--dur) linear forwards; }
 @keyframes walk { 0% { opacity: 0; transform: translate(0, 0); } 8% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--wx), var(--wy)); } }
 .walker.ent { animation-timing-function: ease-in-out; }
@@ -615,6 +644,12 @@ h1, h2, p { margin: 0; }
   font-family: var(--title); font-weight: 800; font-size: .9rem; color: #3a2000; background: linear-gradient(180deg, #ffe08a, #e8b43a); box-shadow: 0 4px 12px rgba(0, 0, 0, .35); white-space: nowrap; }
 .play-card.k-special { box-shadow: 0 0 0 6px #f3e2b4, 0 0 0 8px #c98a1a, 0 0 46px rgba(246, 196, 83, .75), 0 30px 70px rgba(0, 0, 0, .6); }
 .sp-eagles .pc-icon svg { width: 84px; height: 84px; }
+/* little moving scenes in place of the arrows */
+.play-card .pc-icon svg.pc-scene { width: 108px; height: 72px; overflow: visible; animation: icon-in .6s .45s var(--ease) both; }
+.cs-fly { animation: cs-fly 2.6s ease-in-out infinite; }
+@keyframes cs-fly { 0%, 100% { transform: translate(0, 0) rotate(-8deg); } 25% { transform: translate(calc(var(--ax) * .6), calc(var(--ay) * -.8)) rotate(6deg); } 50% { transform: translate(var(--ax), var(--ay)) rotate(-4deg); } 75% { transform: translate(calc(var(--ax) * .3), calc(var(--ay) * 1.2)) rotate(8deg); } }
+.cs-moon { animation: cs-rock 3s ease-in-out infinite alternate; transform-box: view-box; transform-origin: 48px 32px; }
+@keyframes cs-rock { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
 .sp-skip .pc-icon svg { width: 50px; height: 50px; }
 .k-special .pc-text { color: #5a3412; }
 .pc-phrase { font-family: var(--serif); font-style: italic; font-size: 1.75rem; line-height: 1.35; }

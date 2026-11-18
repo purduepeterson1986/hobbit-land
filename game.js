@@ -1111,7 +1111,9 @@
     { id: 'crebain', weight: 2, run: () => crebain() },
     { id: 'bombadil', weight: 1, run: () => bombadil() },
     { id: 'nazgul', weight: 1, run: () => fellBeast() },
-    { id: 'shadowfax', weight: 1, run: () => shadowfax() }
+    { id: 'shadowfax', weight: 1, run: () => shadowfax() },
+    { id: 'goblin', weight: 2, run: () => goblinChase() },
+    { id: 'heroes', weight: 2, run: () => heroChase() }
   ];
   function maybeVisitor() {
     turnsSinceVisitor++;
@@ -1347,8 +1349,10 @@
     return SHADOW(16) + elfArt(0, 1) + elfArt(-14, 0.95, '#d6cfbe');
   }
   // an orc: hunched, grey-green, in rough leather and scraps of iron, with a jagged spear
-  function orcArt(dx, s, helm) {
-    const skin = '#6e7d4a', foot = (x) => '<path d="M' + (x - 2.6) + ',-3 h4.4 l.6,3 h-5.4 Z" fill="#2a221a"/>';
+  // (o.goblin: a goblin instead — paler green, big bat ears, empty-handed)
+  function orcArt(dx, s, helm, o) {
+    const gob = o && o.goblin;
+    const skin = gob ? '#8fa05a' : '#6e7d4a', foot = (x) => '<path d="M' + (x - 2.6) + ',-3 h4.4 l.6,3 h-5.4 Z" fill="#2a221a"/>';
     return '<g transform="translate(' + dx + ',0) scale(' + s + ')"><g class="trot">' +
       limb('leg-a', 'M-3,-12 L-3.6,-2.6', '#3d2f22', 3.2, foot(-3.6)) + limb('leg-b', 'M3,-12 L3.6,-2.6', '#33271c', 3.2, foot(3.6)) +
       limb('leg-a', 'M-4,-28 Q-8.4,-22 -7.4,-15.4', skin, 3, hand(-7.4, -14.6, skin)) +
@@ -1358,10 +1362,11 @@
       '<path d="M-1,-26 L4,-26.6 M-1.4,-22 L5,-22.4" stroke="#3e3222" stroke-width=".7"/>' +
       '<path d="M-4,-31.2 C-1,-34.2 4.2,-33.8 6.8,-30 L4.8,-26.8 C2,-29.4 -1,-29.2 -3.4,-27.4 Z" fill="#6d7278" stroke="#3a3e42" stroke-width=".6"/>' +
       limb('leg-b', 'M5,-27 Q10,-22 9,-14.6', skin, 3, hand(9, -14, skin)) +
-      '<path d="M7.6,-6 L15,-46" stroke="#5a3d22" stroke-width="1.3"/>' +
-      '<path d="M15,-46.4 L12.2,-39.2 L14.2,-40 L15.2,-37.4 L17.4,-39.8 Z" fill="#9aa2a8" stroke="#4f585e" stroke-width=".5"/>' +
+      (gob ? '' : '<path d="M7.6,-6 L15,-46" stroke="#5a3d22" stroke-width="1.3"/>' +
+        '<path d="M15,-46.4 L12.2,-39.2 L14.2,-40 L15.2,-37.4 L17.4,-39.8 Z" fill="#9aa2a8" stroke="#4f585e" stroke-width=".5"/>') +
       '<ellipse cx="2.6" cy="-34.6" rx="5.8" ry="5.2" fill="' + skin + '" stroke="#2c3520" stroke-width=".7"/>' +
-      '<path d="M-2.4,-35.6 L-9.4,-40.6 L-3,-32.6 Z" fill="' + skin + '" stroke="#2c3520" stroke-width=".5"/>' +
+      (gob ? '<path d="M-2.4,-36 L-13.6,-44 L-9,-37.4 L-11.4,-35 L-3,-32.6 Z" fill="' + skin + '" stroke="#2c3520" stroke-width=".5"/><path d="M-4,-35.4 L-10.6,-40" stroke="#c98a7a" stroke-width="1" opacity=".7"/>'
+        : '<path d="M-2.4,-35.6 L-9.4,-40.6 L-3,-32.6 Z" fill="' + skin + '" stroke="#2c3520" stroke-width=".5"/>') +
       (helm ? '<path d="M-3.4,-36.4 C-3,-41.4 1,-42.4 3.4,-42.2 C6.6,-42 8.8,-39.6 8.4,-36.4 Q2.6,-38.4 -3.4,-36.4 Z" fill="#4a4e54" stroke="#2a2e32" stroke-width=".5"/>' : '') +
       '<path d="M-0.6,-38 L7.4,-37.2" stroke="#2c3520" stroke-width="1.4" stroke-linecap="round"/>' +
       '<circle cx="1.4" cy="-36.2" r="1" fill="#ffd34d"/><circle cx="5" cy="-36" r="1" fill="#ffd34d"/>' +
@@ -1560,6 +1565,170 @@
       if (!reduceMotion() && !crowd) passerby();
       scheduleSigns(g, false);
     }, first ? 9000 + Math.random() * 8000 : 28000 + Math.random() * 24000);
+  }
+
+  /* ---------- chases along a winding path through open ground ---------- */
+  // Is (x, y) a clear place for a runner's feet: on the board, away from the road spaces,
+  // the title box, the compass and the walkway above the title?
+  let chaseLabels = [];   // place names on the map, so runners never cross over the writing
+  function chaseClear(x, y) {
+    if (x < 50 || x > 1510 || y < 105 || y > 885) return false;
+    if (x < 410 && y > 670) return false;               // the Hobbit Land title box
+    if (x < 500 && y > 575 && y < 700) return false;    // where the passers-by walk
+    if (x > 545 && x < 685 && y > 735) return false;    // the compass
+    if (chaseLabels.some((b) => x + 16 > b.x && x - 16 < b.x + b.width && y + 4 > b.y && y - 60 < b.y + b.height)) return false;
+    return !NODES.some((n) => Math.abs(n.x - x) < 34 && n.y > y - 72 && n.y < y + 30);
+  }
+  // A serpentine path about len long that stays clear of the road the whole way. Null if none is found.
+  function windingPath(len) {
+    chaseLabels = [];
+    layer('labels').querySelectorAll('text').forEach((t) => { try { const b = t.getBBox(); if (b.width) chaseLabels.push(b); } catch (e) { /* not drawn yet */ } });
+    for (let tries = 0; tries < 300; tries++) {
+      let x = 70 + Math.random() * 1420, y = 120 + Math.random() * 750;
+      if (!chaseClear(x, y)) continue;
+      const a0 = Math.random() * Math.PI * 2, wig = 1.3 + Math.random() * 0.4, wave = 26 + Math.random() * 12, ph = Math.random() * 6.3;
+      const pts = [[x, y]];
+      let ok = true;
+      for (let s = 8; s <= len; s += 8) {
+        const a = a0 + wig * Math.sin(s / wave + ph) + s * 0.002;
+        x += Math.cos(a) * 8; y += Math.sin(a) * 6;   // a little flatter up and down, like the map
+        if (!chaseClear(x, y)) { ok = false; break; }
+        pts.push([x, y]);
+      }
+      if (ok) {
+        const cum = [0];
+        for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+        return { pts, cum, len: cum[cum.length - 1] };
+      }
+    }
+    return null;
+  }
+  // The point s along a path, with the way it is heading (dx).
+  function pathAt(P, s) {
+    s = Math.max(0, Math.min(P.len, s));
+    let i = 1;
+    while (i < P.cum.length - 1 && P.cum[i] < s) i++;
+    const a = P.pts[i - 1], b = P.pts[i], t = (s - P.cum[i - 1]) / ((P.cum[i] - P.cum[i - 1]) || 1);
+    return { x: a[0] + (b[0] - a[0]) * t, y: a[1] + (b[1] - a[1]) * t, dx: b[0] - a[0] };
+  }
+  // One runner: an outer group that moves, a body that flips to face the way it runs, and a spot for a speech bubble.
+  function runner(art, scale) {
+    const g = document.createElementNS(SVGNS, 'g');
+    g.setAttribute('class', 'chaser');
+    g.setAttribute('opacity', '0');
+    g.innerHTML = SHADOW(10) + '<g class="ch-body"><g transform="scale(' + (scale || 1.1) + ')">' + art + '</g></g><g class="ch-say"></g>';
+    layer('critters').appendChild(g);
+    return { g, body: g.querySelector('.ch-body'), say: g.querySelector('.ch-say'), face: 1 };
+  }
+  function placeRunner(r, P, s, opacity) {
+    const at = pathAt(P, s);
+    if (Math.abs(at.dx) > 0.8) r.face = at.dx < 0 ? -1 : 1;
+    r.g.setAttribute('transform', 'translate(' + at.x.toFixed(1) + ',' + at.y.toFixed(1) + ')');
+    r.body.setAttribute('transform', 'scale(' + r.face + ',1)');
+    r.g.setAttribute('opacity', Math.max(0, Math.min(1, opacity)).toFixed(2));
+  }
+  function sayBubble(r, text, w) {
+    r.say.innerHTML = '<g class="ch-bubble"><rect x="' + (-w / 2) + '" y="-82" width="' + w + '" height="22" rx="10" fill="#fffaf0" stroke="#6d6a50" stroke-width="1"/>' +
+      '<text x="0" y="-66.5" text-anchor="middle" class="g-say">' + text + '</text></g>';
+  }
+  // a goblin: a small, scrawny orc with big bat ears and no spear
+  function goblinArt() {
+    return orcArt(0, 0.85, false, { goblin: true });
+  }
+  // a bush for a hobbit to dive into
+  function bushArt() {
+    return '<ellipse cx="0" cy="1" rx="24" ry="4.5" fill="rgba(40,30,10,.22)"/>' +
+      '<g class="bush-shake"><circle cx="-12" cy="-10" r="11" fill="#4f8a3a"/><circle cx="12" cy="-10" r="11" fill="#4a8236"/><circle cx="0" cy="-18" r="13" fill="#5a9a42"/>' +
+      '<circle cx="-5" cy="-21" r="4" fill="#6fb052" opacity=".7"/><circle cx="8" cy="-14" r="3" fill="#6fb052" opacity=".6"/>' +
+      '<circle cx="-8" cy="-8" r="1.6" fill="#d8402e"/><circle cx="6" cy="-24" r="1.6" fill="#d8402e"/><circle cx="14" cy="-6" r="1.6" fill="#d8402e"/></g>';
+  }
+  // Run a little scene frame by frame. step(t) is given the seconds since the start and returns false when done.
+  function scene(step, cleanup) {
+    const t0 = performance.now();
+    const tick = (now) => {
+      if (step((now - t0) / 1000) !== false) requestAnimationFrame(tick);
+      else cleanup();
+    };
+    requestAnimationFrame(tick);
+  }
+
+  // A goblin chases a hobbit along a winding path. The hobbit dives into a bush,
+  // and the goblin stops, looks this way and that, and gives up.
+  function goblinChase() {
+    if (reduceMotion()) return false;
+    const want = 600 + Math.random() * 160;
+    const P = windingPath(want) || windingPath(want * 0.75);   // a shorter run where the road is crowded
+    if (!P) return false;
+    const speed = 60, lag = 60, stopShort = 34;
+    const who = players.length ? players[Math.floor(Math.random() * players.length)] : null;
+    const bush = document.createElementNS(SVGNS, 'g');
+    const end = pathAt(P, P.len);
+    bush.setAttribute('transform', 'translate(' + end.x.toFixed(1) + ',' + end.y.toFixed(1) + ')');
+    bush.setAttribute('class', 'chase-bush');
+    bush.innerHTML = bushArt();
+    const hob = runner(hobbitArt(0, 1, who ? who.h.color : '#4f8a3a'));
+    const gob = runner(goblinArt());
+    layer('critters').appendChild(bush);   // the bush is in front, so the hobbit vanishes into it
+    const tHid = P.len / speed;                       // the hobbit reaches the bush
+    const tStop = (P.len - stopShort + lag) / speed;  // the goblin skids to a stop
+    let hidden = false, stopped = false;
+    scene((t) => {
+      const sh = t * speed;
+      placeRunner(hob, P, sh, Math.min(sh / 25, hidden ? 1 - (t - tHid) / 0.25 : 1));
+      if (!hidden && t >= tHid) { hidden = true; bush.classList.add('shaking'); }
+      const sg = Math.min(t * speed - lag, P.len - stopShort);
+      if (!stopped && t >= tStop) { stopped = true; gob.g.classList.add('still'); sayBubble(gob, '?', 26); }
+      let fade = Math.min(1, Math.max(0, sg) / 25);
+      if (stopped) {
+        const k = t - tStop;
+        if (k > 0.5) gob.face = Math.floor((k - 0.5) / 0.55) % 2 ? -gob.face0 : gob.face0;   // looks this way and that
+        else gob.face0 = gob.face;
+        if (k > 3.0) gob.say.innerHTML = '';
+        if (k > 3.6) fade = 1 - (k - 3.6) / 0.6;
+        bush.setAttribute('opacity', Math.max(0, 1 - Math.max(0, k - 4.0) / 0.6).toFixed(2));
+        const at = pathAt(P, sg);
+        gob.g.setAttribute('transform', 'translate(' + at.x.toFixed(1) + ',' + at.y.toFixed(1) + ')');
+        gob.body.setAttribute('transform', 'scale(' + gob.face + ',1)');
+        gob.g.setAttribute('opacity', Math.max(0, fade).toFixed(2));
+        return k < 4.7;
+      }
+      placeRunner(gob, P, sg, sg < 0 ? 0 : fade);
+      return true;
+    }, () => { hob.g.remove(); gob.g.remove(); bush.remove(); });
+    return (tStop + 4.9) * 1000;
+  }
+
+  // Gimli and Legolas chase a band of orcs along a winding path. The orcs run off,
+  // and Gimli and Legolas stop to catch their breath.
+  function heroChase() {
+    if (reduceMotion()) return false;
+    const want = 640 + Math.random() * 160;
+    const P = windingPath(want) || windingPath(want * 0.75);
+    if (!P) return false;
+    const speed = 60;
+    const orcs = [0, 24, 46].map((lag, i) => ({ r: runner(orcArt(0, [0.95, 1, 0.9][i], i === 1)), lag }));
+    const heroes = [
+      { r: runner(elfArt(0, 1)), lag: 120, stop: 70 },                  // Legolas
+      { r: runner(dwarfArt(0, 1, '#a0522d')), lag: 150, stop: 98 }      // Gimli
+    ];
+    const tStop = Math.max(...heroes.map((h) => (P.len - h.stop + h.lag) / speed));
+    let stopped = false;
+    scene((t) => {
+      orcs.forEach((o) => {
+        const s = t * speed - o.lag;
+        placeRunner(o.r, P, s, s < 0 ? 0 : Math.min(s / 25, (P.len - s) / 40));   // the orcs fade away at the far end
+      });
+      heroes.forEach((h) => {
+        const s = Math.min(t * speed - h.lag, P.len - h.stop);
+        if (s >= P.len - h.stop && !h.r.g.classList.contains('still')) h.r.g.classList.add('still');
+        let o = s < 0 ? 0 : Math.min(1, s / 25);
+        if (t > tStop + 3.0) o = 1 - (t - tStop - 3.0) / 0.6;
+        placeRunner(h.r, P, s, o);
+      });
+      if (!stopped && t >= tStop) { stopped = true; sayBubble(heroes[1].r, 'Ha!', 34); }
+      return t < tStop + 3.7;
+    }, () => { orcs.forEach((o) => o.r.g.remove()); heroes.forEach((h) => h.r.g.remove()); });
+    return (tStop + 3.9) * 1000;
   }
 
   /* ---------- weather that comes and goes ---------- */
@@ -2020,7 +2189,8 @@
       sparkle(n.x, n.y, '#ffe27a', 12);
       await pause(450);
       guard(g);
-      const card = CARDS.draw();
+      BOARD.landOf(geo);
+      const card = CARDS.draw(geo.leg[n.id]);   // the sentence suits where the hobbit is
       setStatus(p, 'turns over a card');
       await holdForQuestion(g);
       await showCard(p, card, g);
@@ -2202,6 +2372,30 @@
     swap: '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M14,24 H44 V14 L58,28 L44,42 V32 H14 Z" fill="#2f6fc0" stroke="#1b4277" stroke-width="2.5" stroke-linejoin="round" transform="translate(0,-6)"/><path d="M50,40 H20 V30 L6,44 L20,58 V48 H50 Z" fill="#d49a22" stroke="#87600f" stroke-width="2.5" stroke-linejoin="round" transform="translate(0,2)"/></svg>',
     skip: '<svg viewBox="-20 -42 40 34" aria-hidden="true"><path d="M-9.2,-25.5 Q-14,-27 -16.5,-31.5 Q-12.5,-30.6 -9.2,-30.4 Z M9.2,-25.5 Q14,-27 16.5,-31.5 Q12.5,-30.6 9.2,-30.4 Z" fill="#bdb898"/><path d="M0,-39.5 C7,-39.5 10,-33 9.6,-27 C9.2,-20 5,-14.5 0,-14.5 C-5,-14.5 -9.2,-20 -9.6,-27 C-10,-33 -7,-39.5 0,-39.5 Z" fill="#c9c4a5" stroke="#7d7a5e" stroke-width=".8"/><ellipse cx="-4.3" cy="-27.5" rx="4" ry="4.6" fill="#e9f0de" stroke="#6d6a50" stroke-width=".7"/><ellipse cx="4.3" cy="-27.5" rx="4" ry="4.6" fill="#e9f0de" stroke="#6d6a50" stroke-width=".7"/><circle cx="-4.3" cy="-27.5" r="1.3" fill="#101410"/><circle cx="4.3" cy="-27.5" r="1.3" fill="#101410"/><path d="M-5.6,-19 Q0,-15.2 5.6,-19 Q0,-17.4 -5.6,-19 Z" fill="#3a2a22"/></svg>'
   };
+  // Little moving scenes on the card in place of the forward / back / stay arrows:
+  // butterflies, a rain cloud, a sleepy moon. Set CARD_SCENES_ON to false to go back to the arrows.
+  const CARD_SCENES_ON = true;
+  const bfly = (x, y, col, ax, ay, dur, delay, s) => '<g transform="translate(' + x + ',' + y + ') scale(' + s + ')"><g class="cs-fly" style="--ax:' + ax + 'px;--ay:' + ay + 'px;animation-duration:' + dur + 's;animation-delay:-' + delay + 's">' +
+    '<g class="bf-wings" style="animation-delay:-' + delay + 's"><path d="M0,0 C-5,-6 -8,-2 -6,1 C-8,3 -4,6 0,1 C4,6 8,3 6,1 C8,-2 5,-6 0,0 Z" fill="' + col + '" stroke="rgba(0,0,0,.4)" stroke-width=".5"/></g>' +
+    '<path d="M0,-2.4 V2.4" stroke="#3a2a1a" stroke-width="1" stroke-linecap="round"/></g></g>';
+  const CARD_SCENES = {
+    forward: '<svg class="pc-scene" viewBox="0 0 96 64" aria-hidden="true">' +
+      '<path d="M6,58 Q48,50 90,58" stroke="#7fa04f" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+      '<path d="M30,57 V46 M66,57 V48" stroke="#5f8a3a" stroke-width="1.6"/>' +
+      '<g fill="#f6a5c0"><circle cx="27.5" cy="44" r="2.6"/><circle cx="32.5" cy="44" r="2.6"/><circle cx="30" cy="41.5" r="2.6"/><circle cx="30" cy="46.5" r="2.6"/></g><circle cx="30" cy="44" r="1.8" fill="#ffd23f"/>' +
+      '<g fill="#fff3a8"><circle cx="63.5" cy="46" r="2.4"/><circle cx="68.5" cy="46" r="2.4"/><circle cx="66" cy="43.6" r="2.4"/><circle cx="66" cy="48.4" r="2.4"/></g><circle cx="66" cy="46" r="1.6" fill="#e8743b"/>' +
+      bfly(26, 24, '#f6a5c0', 10, -6, 2.6, 0, 2) + bfly(58, 16, '#9fd8ff', -8, 7, 3.1, 1.2, 1.7) + bfly(76, 32, '#ffd23f', -6, -8, 2.3, 0.6, 1.5) + '</svg>',
+    back: '<svg class="pc-scene" viewBox="0 0 96 64" aria-hidden="true">' +
+      [0, 1, 2, 3, 4, 5, 6, 7].map((i) => '<path class="rain-drop" d="M' + (26 + i * 6.4) + ',34 l-2,8" stroke="#5a9ad4" stroke-width="2" stroke-linecap="round" style="animation-delay:' + ((i * 0.37) % 0.55).toFixed(2) + 's"/>').join('') +
+      '<ellipse cx="48" cy="60" rx="22" ry="2.6" fill="#7ab0e0" opacity=".45"/>' +
+      '<g class="rain-cloud"><circle cx="34" cy="26" r="10" fill="#9aa3ad"/><circle cx="48" cy="19" r="13" fill="#a9b2bc"/><circle cx="62" cy="26" r="10" fill="#959ea8"/>' +
+      '<rect x="26" y="25" width="44" height="11" rx="5.5" fill="#a0a9b3"/><path d="M38,14 Q44,9 50,11" stroke="#c4cbd2" stroke-width="2" fill="none" stroke-linecap="round"/></g></svg>',
+    stay: '<svg class="pc-scene" viewBox="0 0 96 64" aria-hidden="true">' +
+      '<path d="M40,12 A20,20 0 1 0 58,46 A16,16 0 1 1 40,12 Z" fill="#f3d36a" stroke="#b08a2a" stroke-width="1.5" class="cs-moon"/>' +
+      '<path d="M38,32 q2,2 4,0 M46,36 q2,2 4,0" stroke="#7a5a12" stroke-width="1.4" fill="none" stroke-linecap="round" class="cs-moon"/>' +
+      ['Z', 'z', 'z'].map((z, i) => '<text class="zzz" x="' + (60 + i * 6) + '" y="' + (30 - i * 4) + '" style="animation-delay:' + (i * 0.5).toFixed(2) + 's;font-size:' + (16 - i * 3) + 'px">' + z + '</text>').join('') +
+      '</svg>'
+  };
   function showCard(p, card, g) {
     return new Promise((resolve) => {
       openModal(
@@ -2210,7 +2404,7 @@
         (card.kind === 'special' ? '<div class="pc-rare">Rare card!</div>' : '') +
         '<div class="pc-corner tl">✦</div><div class="pc-corner br">✦</div>' +
         '<div class="pc-who" style="--hc:' + p.h.color + '">' + HB.portrait(p.h, 'pc-who-face') + '</div>' +
-        '<div class="pc-icon">' + ARROWS[card.special || card.kind] + '</div>' +
+        '<div class="pc-icon">' + ((CARD_SCENES_ON && !card.special && CARD_SCENES[card.kind]) || ARROWS[card.special || card.kind]) + '</div>' +
         (card.phrase ? '<p class="pc-phrase">' + esc(card.phrase) + '</p>' : '') +
         '<h2 id="modal-title" class="pc-text">' + esc(card.text) + '</h2>' +
         '</div>',
