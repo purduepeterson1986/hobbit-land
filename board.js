@@ -263,33 +263,57 @@
   }
   const shadow = (rx) => '<ellipse cx="0" cy="1" rx="' + rx + '" ry="' + (rx / 3).toFixed(1) + '" fill="rgba(70,45,15,.18)"/>';
 
+  // a leafy tree: a tapering trunk, a darker under-canopy, sunlit clumps on top
   function roundTree(c1, c2) {
-    return shadow(10) + '<rect x="-2" y="-12" width="4" height="13" rx="1" fill="#6b4a2b"/>' +
-      '<circle cx="0" cy="-21" r="11" fill="' + c1 + '"/><circle cx="-6.5" cy="-15" r="7" fill="' + c2 + '"/><circle cx="6.5" cy="-16" r="7.2" fill="' + c2 + '"/>' +
-      '<circle cx="-3.5" cy="-25" r="4.2" fill="#fff" opacity=".18"/>';
+    const d1 = darker(c2, 0.8), hi = lighter(c1, 0.35);
+    return shadow(10) + '<path d="M-2.8,1 C-1.8,-3 -1.6,-8 -1.5,-13 L1.5,-13 C1.6,-8 1.8,-3 2.8,1 Z" fill="#6b4a2b"/>' +
+      '<path d="M0,-11 L-4.4,-16.4 M0.4,-12.6 L4.2,-17.6" stroke="#6b4a2b" stroke-width="1.5" stroke-linecap="round"/>' +
+      '<circle cx="-6.8" cy="-16.4" r="6.6" fill="' + d1 + '"/><circle cx="6.8" cy="-17" r="6.8" fill="' + d1 + '"/><circle cx="0" cy="-15.4" r="6.2" fill="' + d1 + '"/>' +
+      '<circle cx="0" cy="-22" r="10.4" fill="' + c1 + '"/><circle cx="-6.6" cy="-20" r="6.6" fill="' + c2 + '"/><circle cx="6.4" cy="-21" r="7" fill="' + c2 + '"/>' +
+      '<circle cx="-2.4" cy="-28" r="6" fill="' + c1 + '"/><circle cx="4" cy="-27" r="5.4" fill="' + c1 + '"/>' +
+      '<circle cx="-4" cy="-28.6" r="3.4" fill="' + hi + '" opacity=".7"/><circle cx="2.6" cy="-30" r="2.2" fill="' + hi + '" opacity=".6"/><circle cx="-8.2" cy="-21.6" r="2" fill="' + hi + '" opacity=".45"/>';
   }
+  // a fir tree: three drooping tiers of boughs, shaded on the right
   function pine(c1, c2, snow) {
-    return shadow(8) + '<rect x="-1.8" y="-8" width="3.6" height="9" fill="#5a3d22"/>' +
-      '<path d="M0,-36 L-8,-20 L8,-20 Z M0,-28 L-10,-10 L10,-10 Z M0,-20 L-12,-4 L12,-4 Z" fill="' + c1 + '"/>' +
-      '<path d="M0,-36 L8,-20 L3,-20 Z M0,-28 L10,-10 L4,-10 Z M0,-20 L12,-4 L5,-4 Z" fill="' + c2 + '"/>' +
-      (snow ? '<path d="M0,-36 L-4,-28 L4,-28 Z" fill="#fff"/>' : '');
+    const tier = (t, b, w) => {
+      const m = t + (b - t) * 0.45;
+      return '<path d="M0,' + t + ' C' + f1(-w * 0.3) + ',' + f1(m) + ' ' + f1(-w * 0.7) + ',' + (b - 3) + ' ' + -w + ',' + b + ' Q' + f1(-w * 0.5) + ',' + (b - 1.6) + ' 0,' + (b + 0.6) +
+        ' Q' + f1(w * 0.5) + ',' + (b - 1.6) + ' ' + w + ',' + b + ' C' + f1(w * 0.7) + ',' + (b - 3) + ' ' + f1(w * 0.3) + ',' + f1(m) + ' 0,' + t + ' Z" fill="' + c1 + '"/>' +
+        '<path d="M0,' + t + ' C' + f1(w * 0.3) + ',' + f1(m) + ' ' + f1(w * 0.7) + ',' + (b - 3) + ' ' + w + ',' + b + ' Q' + f1(w * 0.5) + ',' + (b - 1.6) + ' ' + f1(w * 0.2) + ',' + (b + 0.2) +
+        ' C' + f1(w * 0.18) + ',' + f1(m + 2) + ' ' + f1(w * 0.08) + ',' + f1(t + (b - t) * 0.3) + ' 0,' + t + ' Z" fill="' + c2 + '"/>';
+    };
+    return shadow(8) + '<rect x="-1.6" y="-7" width="3.2" height="8" fill="#5a3d22"/>' + tier(-20, -3, 12.5) + tier(-28, -11, 10) + tier(-37, -19, 7.5) +
+      (snow ? '<path d="M0,-37 C-1.4,-34 -2.6,-31.6 -3.6,-29.6 Q0,-31.4 3.6,-29.6 C2.6,-31.6 1.4,-34 0,-37 Z" fill="#fff"/>' : '');
   }
+  // a mallorn of Lothlórien: a silver trunk and a crown of golden leaves
   function mallorn() {
-    return shadow(11) + '<path d="M-2.6,0 L-1.6,-34 L1.6,-34 L2.6,0 Z" fill="#e7e2d2" stroke="#b9b29c" stroke-width=".6"/>' +
-      '<circle cx="0" cy="-42" r="12" fill="#e9b93c"/><circle cx="-9" cy="-34" r="8" fill="#f1cd57"/><circle cx="9" cy="-35" r="8.5" fill="#d9a62b"/>' +
-      '<circle cx="-3" cy="-48" r="5" fill="#fff3b0" opacity=".45"/>';
+    return shadow(11) + '<path d="M-2.8,1 C-2,-12 -1.8,-24 -1.2,-34 L1.2,-34 C1.8,-24 2,-12 2.8,1 Z" fill="#ece7d8" stroke="#b9b29c" stroke-width=".6"/>' +
+      '<path d="M0,-25 L-6,-32 M0.4,-29 L5,-36" stroke="#d8d2bf" stroke-width="1.3" stroke-linecap="round"/>' +
+      '<circle cx="-8" cy="-33" r="7.5" fill="#c9952a"/><circle cx="8.5" cy="-34" r="8" fill="#c9952a"/><circle cx="0" cy="-31.4" r="7" fill="#c9952a"/>' +
+      '<circle cx="0" cy="-43" r="11" fill="#e9b93c"/><circle cx="-8" cy="-38" r="7" fill="#f1cd57"/><circle cx="8" cy="-39" r="7.5" fill="#d9a62b"/>' +
+      '<circle cx="-3" cy="-49" r="6.5" fill="#f1cd57"/><circle cx="4" cy="-48" r="6" fill="#e9b93c"/>' +
+      '<circle cx="-5" cy="-50" r="3.6" fill="#fde58a" opacity=".8"/><circle cx="3" cy="-52" r="2.6" fill="#fde58a" opacity=".7"/><circle cx="-10" cy="-39" r="2.4" fill="#fde58a" opacity=".6"/>';
   }
+  // a bare, twisted dead tree
   function deadTree() {
-    return shadow(7) + '<path d="M0,0 L0,-20 M0,-12 L-7,-19 M0,-16 L6,-24 M0,-20 L-3,-27 M-7,-19 L-9,-23 M6,-24 L9,-25" stroke="#4a3426" stroke-width="2.2" stroke-linecap="round" fill="none"/>';
+    return shadow(7) + '<path d="M-2.4,0 C-1.6,-6 -1.4,-13 -0.8,-20 L0.8,-20 C1,-14 1.6,-6 2.4,0 Z" fill="#4a3426"/>' +
+      '<path d="M-0.6,-11 Q-4,-14 -7,-19 M-7,-19 L-9.4,-23.4 M-7,-19 L-5.4,-22.6 M0.4,-15 Q3,-19 6,-24 M6,-24 L9.4,-25.4 M6,-24 L6.6,-27.6 M0,-19.6 L-2.6,-27" stroke="#4a3426" stroke-width="1.6" stroke-linecap="round" fill="none"/>';
   }
   function bush(c1, c2, flower) {
-    return '<circle cx="-4" cy="-4" r="5" fill="' + c1 + '"/><circle cx="4" cy="-4.5" r="5.5" fill="' + c2 + '"/><circle cx="0" cy="-7.5" r="5" fill="' + c1 + '"/>' +
+    return '<ellipse cx="0" cy="0.4" rx="9" ry="2.4" fill="rgba(70,45,15,.15)"/>' +
+      '<circle cx="-4" cy="-4" r="5" fill="' + darker(c1, 0.85) + '"/><circle cx="4" cy="-4.5" r="5.5" fill="' + c2 + '"/><circle cx="0" cy="-7.5" r="5" fill="' + c1 + '"/>' +
+      '<circle cx="-1.6" cy="-9.4" r="2.2" fill="' + lighter(c1, 0.35) + '" opacity=".7"/>' +
       (flower ? '<circle cx="-3" cy="-8" r="1.4" fill="' + flower + '"/><circle cx="3.5" cy="-6" r="1.4" fill="' + flower + '"/><circle cx="0" cy="-3" r="1.3" fill="' + flower + '"/>' : '');
   }
+  // a weathered boulder with a lit face, a shaded side, a crack and a pebble beside it
   function rock(c1, c2, s) {
-    s = s || 1;
-    return '<path d="M' + (-9 * s) + ',0 L' + (-7 * s) + ',' + (-7 * s) + ' L' + (-1 * s) + ',' + (-11 * s) + ' L' + (6 * s) + ',' + (-8 * s) + ' L' + (9 * s) + ',0 Z" fill="' + c1 + '"/>' +
-      '<path d="M' + (-1 * s) + ',' + (-11 * s) + ' L' + (6 * s) + ',' + (-8 * s) + ' L' + (9 * s) + ',0 L' + (1 * s) + ',0 Z" fill="' + c2 + '"/>';
+    const ln = darker(c2, 0.75);
+    return '<g transform="scale(' + (s || 1) + ')"><ellipse cx="1" cy="0.4" rx="10" ry="2" fill="rgba(40,30,20,.18)"/>' +
+      '<path d="M-9,0 C-9.6,-3.6 -8,-7 -4.6,-9.2 C-1.6,-11.2 3,-11.2 5.8,-8.4 C8.2,-6 9.6,-2.8 9,0 Z" fill="' + c1 + '" stroke="' + ln + '" stroke-width=".6"/>' +
+      '<path d="M1.6,-10.8 C4.4,-10.4 6.6,-8.4 7.6,-6.2 C8.8,-3.8 9.4,-1.8 9,0 L2.4,0 C3.6,-3.6 3.4,-7.2 1.6,-10.8 Z" fill="' + c2 + '"/>' +
+      '<path d="M-6.6,-6.4 C-5,-8.6 -2.4,-10 0.4,-10.4 C-1.6,-8.8 -3.4,-7.4 -4.6,-5.4 Z" fill="#fff" opacity=".22"/>' +
+      '<path d="M-2,-6.2 l1.4,2.2 l-.8,2.4" stroke="' + ln + '" stroke-width=".6" fill="none"/>' +
+      '<ellipse cx="11" cy="-1" rx="2.4" ry="1.6" fill="' + c2 + '"/></g>';
   }
   // a woolly sheep with a dark face, facing right
   function sheep() {
@@ -324,6 +348,10 @@
     const n = parseInt(hex.slice(1), 16), k = f || 0.72;
     return '#' + [16, 8, 0].map((s) => Math.round(((n >> s) & 255) * k).toString(16).padStart(2, '0')).join('');
   }
+  function lighter(hex, f) {
+    const n = parseInt(hex.slice(1), 16), k = f || 0.3;
+    return '#' + [16, 8, 0].map((s) => { const v = (n >> s) & 255; return Math.round(v + (255 - v) * k).toString(16).padStart(2, '0'); }).join('');
+  }
   function horse(c) {
     // the extra outer group lets the .flip rule mirror the horse without undoing its scale
     return shadow(9) + '<g><g transform="scale(.42)">' + horseArt({ coat: c, shade: darker(c), mane: darker(c, 0.45), still: true }) + '</g></g>';
@@ -333,17 +361,32 @@
     for (let i = 0; i < 5; i++) s += '<circle cx="' + f1(rand(-8, 8)) + '" cy="' + f1(rand(-5, 0)) + '" r="1.5" fill="' + pick(cols) + '"/>';
     return s;
   }
+  // a clump of grass blades, two shades
   function tuft(c) {
-    return '<path d="M-4,0 q1,-5 -1,-8 M0,0 q0,-6 1,-10 M4,0 q-1,-5 2,-7" stroke="' + c + '" stroke-width="1.3" fill="none" stroke-linecap="round"/>';
+    return '<path d="M-5,0 Q-6.4,-4 -8,-7.4 Q-4.6,-4.4 -3.4,0 Z M-2,0 Q-2.4,-6 -1,-10.6 Q0,-5 0.4,0 Z" fill="' + darker(c, 0.78) + '"/>' +
+      '<path d="M-3.6,0 Q-3.6,-5 -4.6,-9 Q-1.6,-5 -1.4,0 Z M0.6,0 Q1.4,-6 3.4,-9.4 Q2.6,-4 2.6,0 Z M2.6,0 Q4.4,-3.6 7,-6.4 Q5,-2.6 4.4,0 Z" fill="' + c + '"/>';
   }
+  // marsh reeds with leaves and bulrush heads
   function reeds() {
     return '<path d="M-3,0 q-1,-8 -3,-13 M0,0 v-15 M3,0 q1,-8 4,-12" stroke="#6b7a4a" stroke-width="1.2" fill="none"/>' +
-      '<ellipse cx="0" cy="-15" rx="1.2" ry="3" fill="#5a3d22"/>';
+      '<path d="M-1,0 Q-6,-5 -8,-9 Q-4,-6 0.4,0 Z M1,0 Q5,-4 8,-6 Q4,-3 2.4,0 Z" fill="#7d8c56"/>' +
+      '<ellipse cx="0" cy="-15" rx="1.2" ry="3" fill="#5a3d22"/><ellipse cx="-5.8" cy="-13" rx="1" ry="2.4" fill="#6a4a2a" transform="rotate(-18 -5.8 -13)"/>';
   }
   function mountainSVG(w, h, o) {
     const px = rand(-w * 0.08, w * 0.08);
     const fill = o.fill || '#c2ae8c', shade = o.shade || '#9c8664', line = o.line || '#6e5636';
-    let s = '<path d="M' + f1(-w / 2) + ',0 L' + f1(px) + ',' + f1(-h) + ' L' + f1(w / 2) + ',0 Z" fill="' + fill + '"/>' +
+    if (o.jagged) {
+      // the Mountains of Shadow: sharp, broken ridges with a few lesser points (no extra random numbers, so the layout is unchanged)
+      const P = (x, y) => f1(x) + ',' + f1(y);
+      const left = [[-w / 2, 0], [-w * 0.34, -h * 0.4], [-w * 0.27, -h * 0.36], [-w * 0.14, -h * 0.72], [px - w * 0.07, -h * 0.66]];
+      const right = [[px + w * 0.09, -h * 0.74], [px + w * 0.15, -h * 0.7], [w * 0.28, -h * 0.42], [w * 0.35, -h * 0.46], [w / 2, 0]];
+      const outline = left.concat([[px, -h]], right).map((p) => P(p[0], p[1])).join(' L');
+      return '<path d="M' + outline + ' Z" fill="' + fill + '"/>' +
+        '<path d="M' + P(px, -h) + ' L' + right.map((p) => P(p[0], p[1])).join(' L') + ' L' + P(px + w * 0.08, 0) + ' L' + P(px + w * 0.02, -h * 0.5) + ' Z" fill="' + shade + '"/>' +
+        '<path d="M' + outline + '" fill="none" stroke="' + line + '" stroke-width="1.4" stroke-linejoin="round"/>' +
+        '<path d="M' + P(px - w * 0.04, -h * 0.8) + ' L' + P(px - w * 0.1, -h * 0.5) + ' M' + P(-w * 0.2, -h * 0.5) + ' L' + P(-w * 0.26, -h * 0.25) + '" stroke="#6a5448" stroke-width=".9" opacity=".7"/>';
+    }
+    let s ='<path d="M' + f1(-w / 2) + ',0 L' + f1(px) + ',' + f1(-h) + ' L' + f1(w / 2) + ',0 Z" fill="' + fill + '"/>' +
       '<path d="M' + f1(px) + ',' + f1(-h) + ' L' + f1(w / 2) + ',0 L' + f1(px + w * 0.06) + ',0 Z" fill="' + shade + '"/>';
     if (o.snow) {
       const k = 0.32;
@@ -369,27 +412,46 @@
   }
 
   /* ---------- landmarks ---------- */
+  // a hobbit hole: a grassy hill with a round door in a wooden frame, round windows and a doorstep
   function hobbitHole(doorColor, big) {
     const k = big ? 1 : 0.62;
-    return '<path d="M' + -60 * k + ',0 Q' + -50 * k + ',' + -52 * k + ' 0,' + -56 * k + ' Q' + 50 * k + ',' + -52 * k + ' ' + 60 * k + ',0 Z" fill="#88b45e" stroke="#5c7f3a" stroke-width="1.4"/>' +
-      '<path d="M' + -40 * k + ',' + -42 * k + ' q8,-4 16,-2 M' + 10 * k + ',' + -48 * k + ' q8,-3 14,0" stroke="#5c7f3a" stroke-width="1.2" fill="none"/>' +
-      '<circle cx="0" cy="' + -17 * k + '" r="' + 15 * k + '" fill="#7a5a36"/>' +
-      '<g class="door"><circle cx="0" cy="' + -17 * k + '" r="' + 12.5 * k + '" fill="' + doorColor + '" stroke="#2a2a1a" stroke-width="1"/>' +
-      '<circle cx="0" cy="' + -17 * k + '" r="' + 2.2 * k + '" fill="#f1c84b"/></g>' +
-      '<circle cx="' + -30 * k + '" cy="' + -20 * k + '" r="' + 6 * k + '" fill="#f6e3a1" stroke="#7a5a36" stroke-width="2" class="win"/>' +
-      '<circle cx="' + 30 * k + '" cy="' + -20 * k + '" r="' + 6 * k + '" fill="#f6e3a1" stroke="#7a5a36" stroke-width="2" class="win"/>' +
-      '<path d="M' + -40 * k + ',0 h' + 80 * k + '" stroke="#6e8f44" stroke-width="2"/>';
+    const win = (x) => '<circle cx="' + x + '" cy="-21" r="7.4" fill="#7a5a36"/><circle cx="' + x + '" cy="-21" r="5.6" fill="#f6e3a1" class="win"/>' +
+      '<path d="M' + (x - 5.6) + ',-21 H' + (x + 5.6) + ' M' + x + ',-26.6 V-15.4" stroke="#7a5a36" stroke-width="1.2"/>' +
+      '<rect x="' + (x - 7) + '" y="-12.6" width="14" height="3" rx="1" fill="#8a5a32"/>' +
+      '<circle cx="' + (x - 4) + '" cy="-13.4" r="1.5" fill="#e86a6a"/><circle cx="' + x + '" cy="-13.8" r="1.5" fill="#f6c94a"/><circle cx="' + (x + 4) + '" cy="-13.4" r="1.5" fill="#e86a6a"/>';
+    return '<g transform="scale(' + k + ')">' +
+      '<path d="M-62,0 C-58,-30 -36,-54 0,-57 C36,-54 58,-30 62,0 Z" fill="#86b25c" stroke="#5c7f3a" stroke-width="1.4"/>' +
+      '<path d="M-50,-30 C-36,-50 -14,-55 6,-55.4 C-14,-50 -32,-42 -42,-26 Z" fill="#a3c978" opacity=".75"/>' +
+      '<path d="M26,-48 C42,-40 54,-24 58,-4 L61,0 C58,-30 46,-44 26,-48 Z" fill="#6f9a48" opacity=".8"/>' +
+      '<path d="M-40,-42 q2,-4 3,0 q2,-4 3,0 M14,-50 q2,-4 3,0 q2,-4 3,0 M-54,-12 q2,-4 3,0 M44,-24 q2,-4 3,0" stroke="#5c7f3a" stroke-width="1.1" fill="none"/>' +
+      '<circle cx="-24" cy="-49" r="1.7" fill="#f6c94a"/><circle cx="-18" cy="-51" r="1.7" fill="#fff"/><circle cx="30" cy="-45" r="1.7" fill="#e86a6a"/><circle cx="36" cy="-41" r="1.7" fill="#f6c94a"/>' +
+      '<circle cx="0" cy="-17" r="16" fill="#6b4a2b" stroke="#4a3220" stroke-width="1"/><circle cx="0" cy="-17" r="13.4" fill="#2a1e14"/>' +
+      '<g class="door"><circle cx="0" cy="-17" r="12.6" fill="' + doorColor + '" stroke="#2a2a1a" stroke-width="1"/>' +
+      '<path d="M-8,-26.6 V-7.4 M-4,-29 V-5 M0,-29.6 V-4.4 M4,-29 V-5 M8,-26.6 V-7.4" stroke="rgba(0,0,0,.2)" stroke-width="1"/>' +
+      '<circle cx="0" cy="-17" r="2.2" fill="#f1c84b" stroke="#8a6a1a" stroke-width=".5"/></g>' +
+      '<path d="M-12,0 L-10,-3 H10 L12,0 Z" fill="#b8ad98" stroke="#7a705e" stroke-width=".8"/>' +
+      win(-32) + win(32) +
+      '<path d="M-46,0 H46" stroke="#6e8f44" stroke-width="2"/></g>';
   }
   function chimney(x, y) {
     return '<rect x="' + (x - 3) + '" y="' + (y - 10) + '" width="6" height="10" fill="#8b6b4a" stroke="#5a412a" stroke-width=".8"/>' +
+      '<rect x="' + (x - 3.8) + '" y="' + (y - 11.4) + '" width="7.6" height="2" fill="#6b4f36"/>' +
       '<g class="smoke">' + [0, 1, 2].map((i) => '<circle class="puff" style="animation-delay:' + (i * 1.3) + 's" cx="' + x + '" cy="' + (y - 12) + '" r="3.4" fill="#e9e3d6"/>').join('') + '</g>';
   }
+  // a timber-framed cottage with a thatched roof
   function house(w, h, wall, roof, smoke) {
-    return (smoke ? chimney(Math.round(w / 4), Math.round(-h - w * 0.18)) : '') + shadow(w / 2) + '<rect x="' + -w / 2 + '" y="' + -h + '" width="' + w + '" height="' + h + '" fill="' + wall + '" stroke="#5a412a" stroke-width="1"/>' +
-      '<path d="M' + (-w / 2 - 4) + ',' + -h + ' L0,' + (-h - w * 0.55) + ' L' + (w / 2 + 4) + ',' + -h + ' Z" fill="' + roof + '" stroke="#4a3220" stroke-width="1"/>' +
-      '<rect x="-3" y="-9" width="6" height="9" fill="#5a3a22"/>' +
-      '<rect x="' + (-w / 2 + 3) + '" y="' + (-h + 4) + '" width="5" height="5" fill="#f6dd8a" stroke="#5a412a" stroke-width=".6" class="win"/>' +
-      '<rect x="' + (w / 2 - 8) + '" y="' + (-h + 4) + '" width="5" height="5" fill="#f6dd8a" stroke="#5a412a" stroke-width=".6" class="win"/>';
+    const hw = w / 2, rh = w * 0.55, beam = '#5a412a', th = darker(roof, 0.75);
+    const win = (x) => '<rect x="' + x + '" y="' + (-h + 4) + '" width="5" height="5" fill="#f6dd8a" class="win"/>' +
+      '<path d="M' + (x + 2.5) + ',' + (-h + 4) + ' v5 M' + x + ',' + (-h + 6.5) + ' h5" stroke="' + beam + '" stroke-width=".6"/>' +
+      '<rect x="' + x + '" y="' + (-h + 4) + '" width="5" height="5" fill="none" stroke="' + beam + '" stroke-width=".7"/>';
+    return (smoke ? chimney(Math.round(w / 4), Math.round(-h - w * 0.18)) : '') + shadow(hw + 2) +
+      '<rect x="' + -hw + '" y="' + -h + '" width="' + w + '" height="' + h + '" fill="' + wall + '" stroke="' + beam + '" stroke-width="1"/>' +
+      '<path d="M' + -hw + ',' + f1(-h * 0.4) + ' H' + hw + ' M' + f1(-hw * 0.55) + ',' + f1(-h * 0.4) + ' V0 M' + f1(hw * 0.55) + ',' + f1(-h * 0.4) + ' V0 M' + -hw + ',' + f1(-h * 0.4) + ' L' + f1(-hw * 0.55) + ',0 M' + hw + ',' + f1(-h * 0.4) + ' L' + f1(hw * 0.55) + ',0" stroke="' + beam + '" stroke-width="1" opacity=".75"/>' +
+      '<path d="M' + (-hw - 5) + ',' + (-h + 1.5) + ' Q' + (-hw - 2) + ',' + (-h - 2) + ' ' + f1(-hw * 0.45) + ',' + f1(-h - rh * 0.72) + ' Q0,' + f1(-h - rh - 1.5) + ' ' + f1(hw * 0.45) + ',' + f1(-h - rh * 0.72) +
+        ' Q' + (hw + 2) + ',' + (-h - 2) + ' ' + (hw + 5) + ',' + (-h + 1.5) + ' Q0,' + (-h - 1.5) + ' ' + (-hw - 5) + ',' + (-h + 1.5) + ' Z" fill="' + roof + '" stroke="#4a3220" stroke-width="1"/>' +
+      '<path d="M' + f1(-hw * 0.6) + ',' + f1(-h - rh * 0.45) + ' l-2,4.6 M' + f1(-hw * 0.2) + ',' + f1(-h - rh * 0.75) + ' l-1,5 M' + f1(hw * 0.2) + ',' + f1(-h - rh * 0.75) + ' l1,5 M' + f1(hw * 0.6) + ',' + f1(-h - rh * 0.45) + ' l2,4.6" stroke="' + th + '" stroke-width=".9" stroke-linecap="round"/>' +
+      '<path d="M-3.2,0 V-6.4 Q0,-10.4 3.2,-6.4 V0 Z" fill="#5a3a22" stroke="#3a2614" stroke-width=".6"/><circle cx="1.6" cy="-3.6" r=".6" fill="#e8c860"/>' +
+      win(-hw + 3) + win(hw - 8);
   }
   function elfHouse(w, h) {
     return shadow(w / 2) + '<path d="M' + -w / 2 + ',0 V' + -h + ' Q0,' + (-h - w * 0.8) + ' ' + w / 2 + ',' + -h + ' V0 Z" fill="#f4efe2" stroke="#9b8f6f" stroke-width="1"/>' +
@@ -404,6 +466,73 @@
       (roofCol ? '<path d="M' + (-w / 2 - 2) + ',' + -h + ' L0,' + (-h - w) + ' L' + (w / 2 + 2) + ',' + -h + ' Z" fill="' + roofCol + '"/>' : '') +
       '<rect x="-2" y="' + (-h * 0.62) + '" width="4" height="7" fill="' + (glow || '#2a1f18') + '"/>' +
       '<rect x="-2" y="' + (-h * 0.32) + '" width="4" height="7" fill="' + (glow || '#2a1f18') + '"/>';
+  }
+  // a mûmak of Harad: a great grey beast with two pairs of tusks and a war-tower on its back
+  function oliphaunt() {
+    const skin = '#9a9286', far = '#7d756a', ln = '#5f584e';
+    return shadow(22) +
+      '<path d="M-12,-14 h6 v13.4 h-6 Z M10,-14 h6 v13.4 h-6 Z" fill="' + far + '"/>' +
+      '<path d="M-22,-18 Q-26,-15 -25,-9" stroke="' + far + '" stroke-width="1.4" fill="none" stroke-linecap="round"/>' +
+      '<path d="M-22,-18 C-23,-28 -14,-33 -2,-33 C10,-33 18,-30 21,-24 C23,-18 21,-11 16,-9 L-16,-9 C-21,-10 -22,-14 -22,-18 Z" fill="' + skin + '" stroke="' + ln + '" stroke-width=".8"/>' +
+      '<path d="M-20,-13 C-10,-9.6 8,-9.6 19,-12 C17,-9.6 16.4,-9 16,-9 L-16,-9 C-18,-9.6 -19.4,-11 -20,-13 Z" fill="#857d71"/>' +
+      '<path d="M-18,-12 L-11,-12 C-11.2,-7 -10.6,-3 -10.2,0 L-18.8,0 C-18.4,-3 -17.8,-7 -18,-12 Z M5,-12 L12,-12 C11.8,-7 12.4,-3 12.8,0 L4.2,0 C4.6,-3 5.2,-7 5,-12 Z" fill="#8d8579" stroke="' + ln + '" stroke-width=".6"/>' +
+      '<path d="M-14.6,-11 C-14.4,-7 -14,-4 -13.8,-1 M8.4,-11 C8.6,-7 9,-4 9.2,-1" stroke="#746c61" stroke-width=".5" fill="none"/>' +
+      '<path d="M-18,0 a1.1,1.1 0 0 1 2.2,0 M-14.4,0 a1.1,1.1 0 0 1 2.2,0 M5,0 a1.1,1.1 0 0 1 2.2,0 M8.6,0 a1.1,1.1 0 0 1 2.2,0" fill="#e8e0d0"/>' +
+      '<path d="M-16,-32.4 C-16,-24 -10,-20 -4,-20 L6,-20 C12,-20 14,-24 14,-32 Z" fill="#c7313a"/>' +
+      '<path d="M-15.4,-26 C-13,-21.6 -9,-20.4 -4,-20.4 L6,-20.4 C11,-20.4 13,-22.4 13.8,-26" stroke="#e8b43a" stroke-width="1" fill="none"/>' +
+      '<path d="M-10,-40 h18 v7 h-18 Z" fill="#7a5530" stroke="#4a3220" stroke-width=".8"/>' +
+      '<path d="M-10,-40 v-2.6 h3 v2.6 h3 v-2.6 h3 v2.6 h3 v-2.6 h3 v2.6 h3 v-2.6 v2.6 Z" fill="#7a5530" stroke="#4a3220" stroke-width=".5"/>' +
+      '<path d="M-8,-36.6 h14" stroke="#4a3220" stroke-width=".6"/>' +
+      '<path d="M6,-42.6 V-48" stroke="#4a3220" stroke-width=".9"/><path d="M6,-48 l6,1.6 l-6,1.6 Z" fill="#c7313a"/>' +
+      '<path d="M16,-30 C20,-35 28,-34 30,-28 C31,-24 30,-19 27,-17 L19,-17 C16,-19 15,-26 16,-30 Z" fill="' + skin + '" stroke="' + ln + '" stroke-width=".8"/>' +
+      '<path d="M17,-30 C12,-31 9,-25 11,-19 C13,-17 16,-19 17,-22 Z" fill="#8d8579" stroke="' + ln + '" stroke-width=".6"/>' +
+      '<g class="swing"><path d="M27,-20 Q33,-12 30,-4 Q29,-1 31,0" stroke="' + skin + '" stroke-width="4" fill="none" stroke-linecap="round"/></g>' +
+      '<path d="M24,-19 Q30,-16 35,-21 M22,-18 Q27,-12 32,-14" stroke="#fffbe8" stroke-width="1.8" fill="none" stroke-linecap="round"/>' +
+      '<circle cx="24" cy="-27.6" r="1.1" fill="#2a2420"/>';
+  }
+  // Barad-dûr: a stepped black tower with spiked ledges, two horns cradling the Eye
+  function baradDur() {
+    return '<path d="M-20,0 L-17,-38 L-13,-42 L-12,-108 L-7,-116 L-5,-150 L5,-150 L7,-116 L12,-108 L13,-42 L17,-38 L20,0 Z" fill="#2c2420" stroke="#120d0b" stroke-width="1.2" stroke-linejoin="round"/>' +
+      '<path d="M3,-150 L5,-150 L7,-116 L12,-108 L13,-42 L17,-38 L20,0 L6,0 L6,-110 Z" fill="#1d1714"/>' +
+      '<path d="M-6,-104 V-46 M-1,-110 V-46" stroke="#3a302a" stroke-width=".8"/>' +
+      '<path d="M-17,-38 l-3,-6 M17,-38 l3,-6 M-12,-108 l-4,-7 M12,-108 l4,-7 M-7,-116 l-2,-6 M7,-116 l2,-6" stroke="#2c2420" stroke-width="2" stroke-linecap="round"/>' +
+      '<path d="M-4,-150 C-8,-156 -11,-162 -12,-170 M4,-150 C8,-156 11,-162 12,-170" stroke="#2c2420" stroke-width="4" stroke-linecap="round" fill="none"/>' +
+      '<rect x="-2" y="-90" width="4" height="6" fill="#ff7a2a"/><rect x="-2" y="-56" width="4" height="6" fill="#ff7a2a"/>' +
+      '<rect x="-1.4" y="-132" width="2.8" height="5" fill="#ff7a2a"/><rect x="-10" y="-28" width="3" height="5" fill="#ff7a2a"/><rect x="7" y="-28" width="3" height="5" fill="#ff7a2a"/>';
+  }
+  // the Black Gate: two spiked Towers of the Teeth and an iron gate between them
+  function blackGate() {
+    const t = (x) => '<g transform="translate(' + x + ',0)">' + shadow(8) +
+      '<path d="M-8,0 L-6,-30 L-7,-34 L7,-34 L6,-30 L8,0 Z" fill="#3a302a" stroke="#120d0b" stroke-width="1"/>' +
+      '<path d="M2,-34 L1,0 L8,0 L6,-30 L7,-34 Z" fill="#2a221d"/>' +
+      '<path d="M-7,-34 l1.4,-4.4 l1.4,4.4 l1.4,-4.4 l1.4,4.4 l1.4,-4.4 l1.4,4.4 l1.4,-4.4 l1.4,4.4 l1.4,-4.4 l1.4,4.4 Z" fill="#3a302a" stroke="#120d0b" stroke-width=".6" stroke-linejoin="round"/>' +
+      '<rect x="-1.6" y="-24" width="3.2" height="6" fill="#ff7a2a"/><rect x="-1.6" y="-12" width="3.2" height="6" fill="#ff7a2a"/></g>';
+    let studs = '';
+    for (let i = 0; i < 4; i++) studs += '<circle cx="' + (11.4 + i * 6.4) + '" cy="-18.4" r=".7" fill="#7a6a5a"/><circle cx="' + (11.4 + i * 6.4) + '" cy="-3.6" r=".7" fill="#7a6a5a"/>';
+    return t(0) + '<rect x="8" y="-22" width="26" height="22" fill="#2a221d" stroke="#120d0b"/>' +
+      '<path d="M8,-22 l2.2,-4 l2.2,4 l2.2,-4 l2.2,4 l2.2,-4 l2.2,4 l2.2,-4 l2.2,4 l2.2,-4 l2.2,4 l2.2,-4 l1.6,4 Z" fill="#2a221d" stroke="#120d0b" stroke-width=".5" stroke-linejoin="round"/>' +
+      '<path d="M21,-22 V0 M8,-15 H34 M8,-7.4 H34" stroke="#4a3d33" stroke-width="1"/>' + studs + t(42);
+  }
+  // Mount Doom: a broad ashen base under a steep cone, lava running down, the crater glowing
+  function mountDoom() {
+    const lava = (d, w) => '<path d="' + d + '" stroke="#a8300f" stroke-width="' + (w + 2.4) + '" fill="none" stroke-linecap="round"/><path d="' + d + '" stroke="#ff8a2a" stroke-width="' + w + '" fill="none" stroke-linecap="round"/>';
+    return '<path d="M-122,0 C-104,-14 -86,-30 -64,-40 C-52,-45 -42,-50 -34,-56 L34,-56 C42,-50 54,-45 66,-40 C88,-30 106,-14 122,0 Z" fill="#33251f" stroke="#1d1411" stroke-width="1.4"/>' +
+      '<path d="M30,-54 C52,-44 80,-32 122,0 L54,0 C58,-18 48,-34 30,-54 Z" fill="#271b17"/>' +
+      '<path d="M-46,-44 C-40,-62 -32,-80 -27,-96 L27,-96 C32,-80 40,-62 46,-44 C20,-38 -20,-38 -46,-44 Z" fill="#3e2d26" stroke="#1d1411" stroke-width="1.4"/>' +
+      '<path d="M10,-96 L27,-96 C32,-80 40,-62 46,-44 C36,-42 26,-41 20,-41 C24,-56 20,-76 10,-96 Z" fill="#2a1d18"/>' +
+      '<path d="M-20,-90 L-30,-62 M-6,-92 L-10,-66 M-62,-34 L-82,-16 M-44,-40 L-56,-18 M-96,-14 L-104,-6 M72,-28 L88,-12" stroke="#5a4438" stroke-width="1.2" stroke-linecap="round" opacity=".8"/>' +
+      lava('M-10,-96 Q-16,-70 -28,-50 Q-42,-30 -40,0', 3) + lava('M10,-96 Q18,-66 34,-48 Q48,-32 56,-12', 2.4) +
+      '<path d="M20,-66 l5,-1.6 l.8,5.6 l-5,.8 Z" fill="#ffb84a"/>' +
+      '<ellipse cx="0" cy="-96" rx="27" ry="6" fill="#1d1411"/>' +
+      '<ellipse class="doom-glow" cx="0" cy="-100" rx="40" ry="16" fill="#ff6a1a" opacity=".5"/>' +
+      '<ellipse cx="0" cy="-97" rx="22" ry="4.4" fill="#ffb13a" opacity=".85"/>';
+  }
+  // the ashen plain of Mordor, with dunes of ash and faint glowing cracks
+  function mordorGround() {
+    return '<path d="M1318,548 Q1420,532 1600,536 L1600,920 L1312,920 Q1300,760 1318,548 Z" fill="#4a332b" opacity=".85"/>' +
+      '<path d="M1340,580 Q1460,560 1600,566 L1600,920 L1336,920 Z" fill="#5a3a2c" opacity=".55"/>' +
+      '<g fill="#3e2a22" opacity=".55"><ellipse cx="1400" cy="640" rx="40" ry="6"/><ellipse cx="1540" cy="700" rx="46" ry="7"/><ellipse cx="1380" cy="860" rx="38" ry="6"/><ellipse cx="1570" cy="880" rx="30" ry="5"/><ellipse cx="1450" cy="740" rx="34" ry="5"/></g>' +
+      '<path d="M1372,700 l14,8 l-4,12 l16,6 M1548,610 l-10,14 l8,10 M1420,800 l18,-6 l6,12 M1560,780 l-12,10 l4,12 M1356,620 l10,10" stroke="#d2541c" stroke-width="1.2" fill="none" opacity=".45" stroke-linecap="round" stroke-linejoin="round"/>';
   }
 
   /* ---------- dress the board for one game ---------- */
@@ -470,7 +599,7 @@
     const rx = (type, x, y, r) => ' data-rx="' + type + '" data-x="' + x + '" data-y="' + y + '" data-r="' + (r || 110) + '"';
 
     // Bag End
-    land(58, 150, wrap(58, 150, 1, 'rx rx-door', hobbitHole(pick(['#3f7d3a', '#2f6b48', '#3b6f2c'])) + chimney(30, 104), rx('door', 58, 140, 120)));
+    land(58, 150, wrap(58, 150, 1, 'rx rx-door', hobbitHole(pick(['#3f7d3a', '#2f6b48', '#3b6f2c'])) + chimney(16, -30), rx('door', 58, 140, 120)));
     reserve(58, 125, 62);
     if (!SER) {
     // a couple of neighbours' holes
@@ -552,17 +681,11 @@
         '<circle class="marsh-light" style="animation-delay:' + (i * 0.7) + 's" cx="' + p[0] + '" cy="' + (p[1] - 6) + '" r="3.2" fill="#d6ffb8"/>').join(''), rx('lights', 790, 800, 140)));
     })();
     // Oliphaunt in Ithilien
-    land(1148, 772, wrap(1148, 772, 1, 'rx rx-trunk', shadow(20) +
-      '<path d="M-16,0 v-12 M-8,0 v-12 M8,0 v-12 M15,0 v-12" stroke="#8d8579" stroke-width="5"/>' +
-      '<ellipse cx="0" cy="-20" rx="21" ry="13" fill="#9a9286"/><circle cx="20" cy="-24" r="9" fill="#9a9286"/>' +
-      '<path d="M18,-28 L-6,-36 L-4,-30 Z" fill="#c7313a"/>' +
-      '<g class="swing"><path d="M27,-22 Q32,-10 26,-2" stroke="#9a9286" stroke-width="4" fill="none" stroke-linecap="round"/></g>' +
-      '<path d="M23,-18 q6,2 10,-2" stroke="#fffbe8" stroke-width="2" fill="none"/><circle cx="21" cy="-27" r="1.3" fill="#2a2420"/>', rx('trunk', 1148, 758, 120)));
+    land(1148, 772, wrap(1148, 772, 1, 'rx rx-trunk', oliphaunt(), rx('trunk', 1148, 758, 120)));
     reserve(1148, 752, 30);
     }
     // Mordor: a dark land walled by mountains
-    land(540, '<path d="M1318,548 Q1420,532 1600,536 L1600,920 L1312,920 Q1300,760 1318,548 Z" fill="#4a332b" opacity=".85"/>' +
-      '<path d="M1340,580 Q1460,560 1600,566 L1600,920 L1336,920 Z" fill="#5a3a2c" opacity=".55"/>');
+    put(-1000, mordorGround());   // drawn first, under Mordor's own rocks and mountains
     if (!SER) {
     // Minas Morgul
     land(1214, 772, wrap(1214, 772, 1, 'rx rx-glow', tower(16, 58, '#8a8f86', '#6f746b', '#7dff9c') +
@@ -610,7 +733,7 @@
       const stIth = geo.stopNode.ithilien;
       const mumakAt = stIth && [[0, -12], [-46, -16], [46, -16], [-40, 34], [40, 34], [0, 44], [0, -56]].find(([dx, dy]) =>
         !geo.nodes.some((n) => n !== stIth && Math.hypot(n.x - (stIth.x + dx), n.y - (stIth.y + dy - 18)) < 40)) || [0, -12];
-      if (stIth) place('ithilien', mumakAt[0], mumakAt[1], shadow(20) + '<path d="M-16,0 v-12 M-8,0 v-12 M8,0 v-12 M15,0 v-12" stroke="#8d8579" stroke-width="5"/><ellipse cx="0" cy="-20" rx="21" ry="13" fill="#9a9286"/><circle cx="20" cy="-24" r="9" fill="#9a9286"/><path d="M18,-28 L-6,-36 L-4,-30 Z" fill="#c7313a"/><path d="M27,-22 Q32,-10 26,-2" stroke="#9a9286" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M23,-18 q6,2 10,-2" stroke="#fffbe8" stroke-width="2" fill="none"/><circle cx="21" cy="-27" r="1.3" fill="#2a2420"/>');
+      if (stIth) place('ithilien', mumakAt[0], mumakAt[1], oliphaunt(), 'trunk');
       place('morgul', 0, 0, tower(16, 58, '#8a8f86', '#6f746b', '#7dff9c') + '<ellipse class="glow morgul-glow" cx="0" cy="-60" rx="14" ry="22" fill="#7dff9c" opacity=".25"/>', 'glow');
       place('ungol', -8, 0, tower(14, 44, '#6e665e', null, '#ffb25a'));
       place('ungol', 46, -6, '<g class="spider"><ellipse cx="0" cy="-12" rx="5" ry="6" fill="#2a1e1a"/><path d="M-4,-13 l-7,-5 M-4,-10 l-8,1 M4,-13 l7,-5 M4,-10 l8,1" stroke="#2a1e1a" stroke-width="1.4"/></g>', 'spider');
@@ -628,23 +751,16 @@
       land(lo.y + 30, '<g class="lorien-lights">' + motes + '</g>');
     })();
     // Barad-dûr and the Eye
-    land(600, wrap(1566, 604, 1, '', '<path d="M-20,0 L-13,-110 L-6,-118 L-4,-150 L4,-150 L6,-118 L13,-110 L20,0 Z" fill="#2c2420" stroke="#120d0b" stroke-width="1.2"/>' +
-      '<path d="M-4,-150 L-12,-170 M4,-150 L12,-170" stroke="#2c2420" stroke-width="4" stroke-linecap="round"/>' +
-      '<rect x="-2" y="-90" width="4" height="6" fill="#ff7a2a"/><rect x="-2" y="-56" width="4" height="6" fill="#ff7a2a"/>'));
+    land(600, wrap(1566, 604, 1, '', baradDur()));
     land(601, '<g id="eye" transform="translate(1566,442)"><ellipse class="eye-glow" cx="0" cy="0" rx="26" ry="14" fill="#ff8a2a" opacity=".35"/>' +
       '<path d="M-20,0 Q0,-14 20,0 Q0,14 -20,0 Z" fill="#ffb02e" stroke="#c43c12" stroke-width="1.5"/>' +
       '<g id="eye-pupil"><ellipse cx="0" cy="0" rx="2.6" ry="9" fill="#1a0a05"/></g></g>');
     reserve(1566, 520, 36); reserve(1566, 450, 30);
     // Black Gate
-    land(560, wrap(1340, 566, 1, '', tower(12, 34, '#3a302a', null, '#ff7a2a') + '<rect x="8" y="-22" width="26" height="22" fill="#2a221d" stroke="#120d0b"/><path d="M8,-11 h26 M21,-22 v22" stroke="#4a3d33" stroke-width="1"/>' +
-      '<g transform="translate(42,0)">' + tower(12, 34, '#3a302a', null, '#ff7a2a') + '</g>'));
+    land(560, wrap(1340, 566, 1, '', blackGate()));
     reserve(1360, 550, 34);
     // Mount Doom
-    land(880, wrap(1480, 880, 1, 'rx rx-lava', '<path d="M-118,0 Q-60,-50 -26,-96 L26,-96 Q60,-50 118,0 Z" fill="#3a2a24" stroke="#1d1411" stroke-width="1.6"/>' +
-      '<path d="M26,-96 Q60,-50 118,0 L40,0 Q30,-50 12,-96 Z" fill="#2c1f1b"/>' +
-      '<path d="M-10,-96 Q-16,-60 -36,-30 Q-44,-14 -40,0" stroke="#e8541c" stroke-width="5" fill="none" opacity=".9"/>' +
-      '<path d="M10,-96 Q20,-56 46,-26" stroke="#e8541c" stroke-width="4" fill="none" opacity=".8"/>' +
-      '<ellipse class="doom-glow" cx="0" cy="-100" rx="40" ry="16" fill="#ff6a1a" opacity=".5"/>' +
+    land(880, wrap(1480, 880, 1, 'rx rx-lava', mountDoom() +
       '<g class="sparks">' + [-16, -6, 4, 14].map((x, i) => '<circle cx="' + x + '" cy="' + (-100 - i % 2 * 4) + '" r="2.4" fill="#ffd34d"/>').join('') + '</g>', rx('lava', 1480, 780, 150)));
     // smoke above Mount Doom
     land(700, '<g>' + [0, 1, 2, 3].map((i) => '<circle class="doom-smoke" style="animation-delay:' + (i * 1.6) + 's" cx="' + (1480 + i * 3) + '" cy="740" r="14" fill="#5c514c"/>').join('') + '</g>');
@@ -669,8 +785,8 @@
     if (!SER) range([[1108, 40], [1132, 120], [1196, 290], [1186, 360], [1208, 470], [1176, 560]], 34, [52, 84], { snow: true, fill: '#c8bba3', shade: '#a4957a', ignore: 'moria' });
     if (SER) range([[1040, 330], [1080, 270], [1130, 200], [1170, 130]], 34, [46, 70], { snow: true, fill: '#c8bba3', shade: '#a4957a' });
     if (!SER) range([[612, 640], [700, 628], [800, 618], [880, 610]], 34, [44, 66], { snow: true, fill: '#c9bea6', shade: '#a99a7e' });
-    range([[1326, 562], [1420, 548], [1520, 546]], 30, [40, 60], { fill: '#4a3b34', shade: '#2f2521', line: '#1a1210' });
-    range([[1312, 600], [1302, 700], [1306, 800], [1300, 910]], 30, [40, 58], { fill: '#4a3b34', shade: '#2f2521', line: '#1a1210' });
+    range([[1326, 562], [1420, 548], [1520, 546]], 30, [40, 60], { fill: '#4a3b34', shade: '#2f2521', line: '#1a1210', jagged: true });
+    range([[1312, 600], [1302, 700], [1306, 800], [1300, 910]], 30, [40, 58], { fill: '#4a3b34', shade: '#2f2521', line: '#1a1210', jagged: true });
 
     /* ---- scenery that moves around from game to game ---- */
     // Only a dozen trees sway all the time, to keep the board light on tablets.
@@ -825,10 +941,11 @@
       s += '<text class="map-label short" x="' + x + '" y="' + y + '" text-anchor="middle">' + sc.name + '</text>';
     });
     [['Old Forest', 470, 372], ['Barrow-downs', 410, 600], ['Caradhras', 1160, 62], ['Fangorn', 925, 556], ['Rohan', 700, 400], ['Isengard', 690, 594], ['Mirkwood', 1490, 170],
-      ['Mordor', 1440, 600], ['Anduin', 1365, 250], ['The Shire', 160, 38], ['Barad-dûr', 1566, 640], ['Black Gate', 1360, 520], ['Misty Mountains', 1240, 30], ['Trollshaws', 884, 302]].forEach((l) => {
+      ['Mordor', 1440, 600], ['Anduin', 1365, 250], ['The Shire', 160, 38], ['Barad-dûr', 1592, 618, 'end'], ['Black Gate', 1360, 520], ['Misty Mountains', 1240, 30], ['Trollshaws', 884, 302]].forEach((l) => {
       if (geo.map !== 'classic' && !['Mordor', 'Barad-dûr', 'Black Gate', 'Mirkwood', 'The Shire', 'Misty Mountains', 'Anduin'].includes(l[0])) return;
       const p = (geo.map === 'southern' && { Anduin: [1367, 242], 'Black Gate': [1372, 541] }[l[0]]) || [l[1], l[2]];
-      s += '<text class="map-label region" x="' + p[0] + '" y="' + p[1] + '" text-anchor="middle">' + l[0] + '</text>';
+      // Barad-dûr sits at the right edge, so its name ends there instead of being centred under the tower
+      s += '<text class="map-label region" x="' + p[0] + '" y="' + p[1] + '" text-anchor="' + (l[3] || 'middle') + '">' + l[0] + '</text>';
     });
     return s;
   }

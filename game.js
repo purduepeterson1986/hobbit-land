@@ -339,8 +339,12 @@
       inner = '<circle class="sp-ring" r="24"/><circle class="sp-base" r="20"/>' +
         '<circle r="11" fill="#3f7d3a" stroke="#22401f" stroke-width="1.4"/><circle r="2.2" fill="#f1c84b"/>';
     } else if (n.kind === 'finish') {
-      inner = '<circle class="sp-glow" r="34"/><circle class="sp-ring" r="25"/><circle class="sp-base" r="21"/>' +
-        '<circle r="10" fill="none" stroke="#e8b43a" stroke-width="4.5"/><circle r="10" fill="none" stroke="#fff1a8" stroke-width="1.2" opacity=".8"/>';
+      // dark volcanic rock with glowing cracks, and the One Ring lying on it, seen at a slant
+      inner = '<circle class="sp-glow" r="32"/><circle class="sp-ring" r="23.5"/><circle class="sp-base" r="21"/>' +
+        '<path d="M-15,8 L-8,4 L-3,10 M7,-13 L10,-7 L16,-8 M-13,-10 L-8,-6 M3,12 L8,15" stroke="#e8541c" stroke-width="1.4" fill="none" opacity=".85" stroke-linecap="round"/>' +
+        '<g transform="rotate(-14)"><ellipse rx="11" ry="5" fill="none" stroke="#8a5a12" stroke-width="3.6"/>' +
+        '<path d="M-11,0 A11,5 0 0 0 11,0" fill="none" stroke="#f0c24a" stroke-width="3.6"/>' +
+        '<path d="M-8,3.4 A11,5 0 0 0 6,4.2" fill="none" stroke="#fff3b0" stroke-width="1" opacity=".9"/></g>';
     } else if (n.kind === 'fork') {
       inner = '<circle class="sp-ring" r="20"/><circle class="sp-base" r="17"/>' +
         '<path d="M0,10 V-11" stroke="#5a3d22" stroke-width="2.4"/>' +

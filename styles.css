@@ -256,9 +256,9 @@ h1, h2, p { margin: 0; }
 .space.k-fork .sp-ring { fill: none; stroke: #e9f7d6; stroke-width: 3; stroke-dasharray: 4 4; }
 .space.k-start .sp-base { fill: #a8cf82; stroke: #3f6b2a; }
 .space.k-start .sp-ring { fill: #f3e6c4; stroke: #7a5a32; stroke-width: 2; }
-.space.k-finish .sp-base { fill: #3a221a; stroke: #ff9a3a; stroke-width: 3; }
-.space.k-finish .sp-ring { fill: #ff6a1a; opacity: .6; }
-.space.k-finish .sp-glow { fill: #ff8a2a; opacity: .3; animation: doom-pulse 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.space.k-finish .sp-base { fill: #2a1a14; stroke: #6a2410; stroke-width: 3; }
+.space.k-finish .sp-ring { fill: none; stroke: #ff6a1a; stroke-width: 2; opacity: .85; }
+.space.k-finish .sp-glow { fill: #ff5a1a; opacity: .2; animation: doom-pulse 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 .space.is-rest .sp-base { fill: #d6eedc; stroke: #2e6b3a; }
 .space.is-rest .sp-ring { fill: none; stroke: #f4fbef; stroke-width: 3; }
 .sp-plus { font-family: var(--font); font-weight: 900; font-size: 9px; fill: #1f4a2a; paint-order: stroke; stroke: #f4fbef; stroke-width: 2.4px; }
