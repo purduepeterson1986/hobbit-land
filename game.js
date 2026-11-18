@@ -247,7 +247,7 @@
     });
     const names = [];
     for (let i = 0; i < settings.players; i++) names.push('<b>' + HB.byId(settings.hobbits[i]).name + '</b>' + (isCpu(i) ? ' (computer)' : ''));
-    elSummary.innerHTML = settings.players + ' players: ' + names.join(', ') + ' · ' + settings.length.charAt(0).toUpperCase() + settings.length.slice(1) + ' road · ' + (settings.map === 'random' ? 'Random map' : MAP_NAMES[settings.map] + ' map');
+    elSummary.innerHTML = settings.players + ' players: ' + names.join(', ') + ' · ' + (settings.map === 'random' ? 'Random' : MAP_NAMES[settings.map]) + ' Map - ' + settings.length.charAt(0).toUpperCase() + settings.length.slice(1);
   }
 
   /* ============================================================
@@ -2453,7 +2453,7 @@
       const badges = (p.bonus && !p.place ? '<span class="pbadge rest" title="+1 on the next roll">🍃 +1</span>' : '') +
         (onFork ? '<span class="pbadge short" title="Next move takes the shortcut">➜ Shortcut</span>' : '') +
         (p.skip && !p.place ? '<span class="pbadge skip" title="Misses the next turn">Skip</span>' : '') +
-        (ringPull(p) ? '<span class="pbadge ring" title="−1 on rolls while leading in Mordor"><svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3.8" fill="none" stroke="#f0c24a" stroke-width="2.2"/></svg>−1</span>' : '');
+        (ringPull(p) ? '<span class="pbadge ring" title="−1 on rolls while leading in Mordor">🌋 −1</span>' : '');
       if (p.mothsEl) p.mothsEl.setAttribute('display', p.bonus && !p.place && !reduceMotion() ? 'inline' : 'none');
       const bEl = $('.pbadges', el);
       if (bEl.innerHTML !== badges) bEl.innerHTML = badges;

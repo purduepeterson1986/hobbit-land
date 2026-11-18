@@ -150,7 +150,7 @@ h1, h2, p { margin: 0; }
 .seg.selected { background: var(--gold); color: #2a1a00; box-shadow: 0 4px 12px rgba(240, 170, 40, .3); }
 .segmented.small .seg { min-width: 0; min-height: 42px; font-size: .95rem; padding: 0 14px; }
 
-/* Map (left) and Road length (right) share one panel */
+/* Map (left) and Map length (right) share one panel */
 .pick-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px 24px; flex-wrap: wrap; }
 .pick-col { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .pick-col.right { align-items: flex-end; text-align: right; }
@@ -545,7 +545,7 @@ h1, h2, p { margin: 0; }
 .pbadge.rest { background: #cfe9d6; color: #1f4a2a; box-shadow: 0 0 0 1.5px #5fae6a; }
 .pbadge.skip { background: #e8e2c8; color: #4a4636; box-shadow: 0 0 0 1.5px #8d8a6c; }
 .pbadge.short { background: #d6e6f7; color: #1d3a5c; box-shadow: 0 0 0 1.5px #4f86c0; }
-.pbadge.ring { background: #2e2214; color: #ffd25a; box-shadow: 0 0 0 1.5px #d4a72c; }
+.pbadge.ring { background: #f7d6c2; color: #7a2410; box-shadow: 0 0 0 1.5px #d2582a; }
 /* the Eye's beam onto the hobbit feeling the Ring's pull */
 #l-beam { opacity: 0; transition: opacity .55s ease; }
 #l-beam.on { opacity: 1; }
@@ -553,7 +553,6 @@ h1, h2, p { margin: 0; }
 #l-beam .beam-spot { opacity: .35; animation: beam-spot 2.2s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
 @keyframes beam-pulse { from { opacity: .7; } to { opacity: 1; } }
 @keyframes beam-spot { from { opacity: .25; transform: scale(.9); } to { opacity: .45; transform: scale(1.08); } }
-.pbadge.ring svg { width: .8em; height: .8em; margin-right: 3px; vertical-align: -1px; }
 @keyframes badge-in { from { transform: scale(0); } }
 .pwins { font-size: .76rem; font-weight: 700; color: var(--ink-faint); margin-top: 2px; }
 .pwins:empty { display: none; }

@@ -14,7 +14,7 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
    - **Swap places with another hobbit.** You trade places with another hobbit still on the road, chosen at random.
    - **Gollum steals your next turn.** A "Skip" badge shows on your name tag until that turn is missed.
 7. **River map only:** if your roll stops on a plain **boat** (between Lothlórien and Amon Hen), the current carries you **1 space** downstream. A boat with a card on it turns over a card instead, and the drift never turns over a card.
-8. **The Ring's pull:** once inside Mordor (the black-ash road from Cirith Ungol to Mount Doom), the hobbit in the lead gets **−1 on each roll**, though it always moves at least 1 space. A gold ring "−1" badge on the name tag shows who feels it, and the Eye of Sauron shines a beam of light on that hobbit (the beam fades and moves when someone else takes the lead); if two hobbits are level, neither does. It only affects die rolls, and it stops when just one hobbit is left on the road.
+8. **The Ring's pull:** once inside Mordor (the black-ash road from Cirith Ungol to Mount Doom), the hobbit in the lead gets **−1 on each roll**, though it always moves at least 1 space. A Mount Doom "🌋 −1" badge on the name tag shows who feels it, and the Eye of Sauron shines a beam of light on that hobbit (the beam fades and moves when someone else takes the lead); if two hobbits are level, neither does. It only affects die rolls, and it stops when just one hobbit is left on the road.
 9. The first hobbit to reach Mount Doom wins. Play goes on until every place (2nd, 3rd, 4th) is decided.
 
 ## The road
@@ -25,7 +25,7 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
 - Along the way: Bree, Weathertop, Rivendell, Lothlórien, Amon Hen, the Emyn Muil, the Dead Marshes, Ithilien, Minas Morgul and Cirith Ungol.
 - Reaching Mount Doom does not need an exact roll.
 - The road takes on the land it crosses: a sandy lane in the Shire, packed earth to Rivendell, grey paving with snow over Caradhras, a boardwalk into the Dead Marshes, Gondor paving in Ithilien and black ash in Mordor. On the River map, the stretch from Lothlórien to Amon Hen is the river itself, and its spaces are little elven boats (see rule 7). The spaces are stepping stones in the same colours, with grass, pebbles and footprints along the sides and wooden bridges where the road crosses a river.
-- **Road length** (chosen in settings), the same on all four maps:
+- **Map length** (chosen in settings), the same on all four maps:
 
   | Length | Spaces (long way) | With both shortcuts | Difference |
   |---|---|---|---|
@@ -49,7 +49,7 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
 ## Settings
 
 - **Players:** 2, 3 or 4, each a Person or the Computer. Picking a hobbit another player already has swaps the two.
-- **Road length:** Short, Normal or Long (see the table above).
+- **Map length:** Short, Normal or Long (see the table above).
 - **Map:** Random (the default: a different map is picked every game), Classic (the road described above), Serpent (a zig-zag road across the map), South (a road that runs south first) or River (by boat down the Anduin). They share the same stops, forks, rest stops and lengths. The start message says which map is in play.
 - **Auto-tap Computer Cards:** off by default, so a card on a computer's turn waits for someone to press Continue. Turn it **On** and choose how long each card stays up (2, 5 or 10 seconds) before Continue is tapped automatically. This applies to computer players only; people always press Continue themselves.
 - Settings are remembered between visits. Win counts are kept while you press **Next game**, and start again when you go back to the settings.
