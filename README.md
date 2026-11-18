@@ -14,7 +14,8 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
    - **Swap places with another hobbit.** You trade places with another hobbit still on the road, chosen at random.
    - **Gollum steals your next turn.** A "Skip" badge shows on your name tag until that turn is missed.
 7. **River map only:** if your roll stops on a plain **boat** (between Lothlórien and Amon Hen), the current carries you **1 space** downstream. A boat with a card on it turns over a card instead, and the drift never turns over a card.
-8. The first hobbit to reach Mount Doom wins. Play goes on until every place (2nd, 3rd, 4th) is decided.
+8. **The Ring's pull:** once inside Mordor (the black-ash road from Cirith Ungol to Mount Doom), the hobbit in the lead gets **−1 on each roll**, though it always moves at least 1 space. A gold ring "−1" badge on the name tag shows who feels it, and the Eye of Sauron shines a beam of light on that hobbit (the beam fades and moves when someone else takes the lead); if two hobbits are level, neither does. It only affects die rolls, and it stops when just one hobbit is left on the road.
+9. The first hobbit to reach Mount Doom wins. Play goes on until every place (2nd, 3rd, 4th) is decided.
 
 ## The road
 

@@ -293,6 +293,7 @@
   }
   let geo = boardFor('normal', 'classic');
   let mapNow = 'classic';   // the map chosen for the game in play
+  let ringTold = false;     // the Ring's pull has been explained this game
   let NODES = geo.nodes;
   let START_DIST = geo.startDist;
 
@@ -556,6 +557,7 @@
   }
   function drawToken(p) {
     p.el.setAttribute('transform', 'translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ')');
+    if (p === beamP) beamDraw(p);   // the Eye's beam follows its hobbit step by step
     p.liftEl.setAttribute('transform', 'translate(0,' + (-p.h0).toFixed(1) + ') rotate(' + (p.rot || 0).toFixed(1) + ') scale(' + p.sx.toFixed(3) + ',' + p.sy.toFixed(3) + ')');
     p.faceEl.setAttribute('transform', 'scale(' + p.dir + ',1)');
     const k = 1 - Math.min(0.5, p.h0 / 60);
@@ -701,6 +703,36 @@
     if (pupil) pupil.classList.add('slow');
     lookAt(lead.x, lead.y);
     setTimeout(() => { if (pupil) pupil.classList.remove('slow'); }, 1800);
+  }
+  // The Eye's beam: a light from the Eye onto the hobbit feeling the Ring's pull.
+  // When another hobbit takes the lead, it fades out and comes back on that hobbit.
+  let beamP = null, beamTimer = 0;
+  function eyeBeam() {
+    const p = (playing && players.find(ringPull)) || null;
+    if (p === beamP) return;
+    const L = layer('beam');
+    clearTimeout(beamTimer);
+    const was = beamP;
+    beamP = p;
+    L.classList.remove('on');
+    if (!p) return;
+    beamTimer = setTimeout(() => { if (beamP === p) { beamDraw(p); L.classList.add('on'); lookAt(p.x, p.y); } }, was ? 600 : 50);
+  }
+  function beamDraw(p) {
+    const L = layer('beam');
+    if (!L.firstChild) {
+      L.innerHTML = '<defs><linearGradient id="beam-grad" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffd27a" stop-opacity=".9"/>' +
+        '<stop offset=".6" stop-color="#ff7a2a" stop-opacity=".32"/><stop offset="1" stop-color="#ff6a1a" stop-opacity=".5"/></linearGradient></defs>' +
+        '<ellipse class="beam-spot" rx="24" ry="9" fill="#ff7a2a"/><path class="beam-cone" fill="url(#beam-grad)"/>';
+    }
+    const ex = 1566, ey = 442, tx = p.x, ty = p.y - 18;
+    const dx = tx - ex, dy = ty - ey, d = Math.hypot(dx, dy) || 1, nx = -dy / d, ny = dx / d;
+    const P = (x, y) => x.toFixed(1) + ',' + y.toFixed(1);
+    $('.beam-cone', L).setAttribute('d', 'M' + P(ex + nx * 2.5, ey + ny * 2.5) + ' L' + P(tx + nx * 15, ty + ny * 15) + ' Q' + P(tx + dx / d * 8, ty + dy / d * 8) + ' ' + P(tx - nx * 15, ty - ny * 15) + ' L' + P(ex - nx * 2.5, ey - ny * 2.5) + ' Z');
+    const gr = $('#beam-grad', L);
+    gr.setAttribute('x1', ex); gr.setAttribute('y1', ey); gr.setAttribute('x2', tx.toFixed(1)); gr.setAttribute('y2', ty.toFixed(1));
+    const s = $('.beam-spot', L);
+    s.setAttribute('cx', p.x.toFixed(1)); s.setAttribute('cy', p.y.toFixed(1));
   }
   function lookAt(x, y) {
     const pupil = $('#eye-pupil', elBoard);
@@ -1831,7 +1863,7 @@
     NODES = geo.nodes;
     START_DIST = geo.startDist;
     renderBoard();
-    playing = true; awaitingRoll = false; placesGiven = 0; moved = false; turnsSinceVisitor = 0; visitorBusyUntil = 0;
+    playing = true; ringTold = false; awaitingRoll = false; placesGiven = 0; moved = false; turnsSinceVisitor = 0; visitorBusyUntil = 0;
     scheduleBirds(gen);
     scheduleWander(gen);
     scheduleWeather(gen, true);
@@ -1905,19 +1937,28 @@
       setRoll(false, 'Rolling…');
       moved = true;
       p.turns++;
+      const pull = ringPull(p) ? 1 : 0;
+      if (pull && !ringTold) {
+        ringTold = true;
+        toast('The Ring grows heavy… ' + p.name + ' gets −1 on rolls while leading in Mordor.', p.h.color, 2600);
+        await pause(2400);
+        guard(g);
+      }
       const v = 1 + Math.floor(Math.random() * 6);
       const bonus = p.bonus || 0;
+      const steps = Math.max(1, v + bonus - pull);   // always at least 1 space
       setStatus(p, 'rolls…');
       await rollDie(v);
       guard(g);
       p.bonus = 0;
       updatePlayers();
-      setStatus(p, 'rolled a <b>' + v + '</b>' + (bonus ? ' <b>+' + bonus + '</b> for resting = <b>' + (v + bonus) + '</b>' : ''));
-      bubble(bonus ? v + '+' + bonus : v, p.h.color);
-      await pause(bonus ? 700 : 380);
+      setStatus(p, 'rolled a <b>' + v + '</b>' + (bonus ? ' <b>+' + bonus + '</b> for resting' : '') + (pull ? ' <b>−1</b> for the Ring’s pull' : '') +
+        (bonus || pull ? ' = <b>' + steps + '</b>' : ''));
+      bubble(v + (bonus ? '+' + bonus : '') + (pull ? '−1' : ''), p.h.color);
+      await pause(bonus || pull ? 700 : 380);
       guard(g);
       setRoll(false, 'Walking…');
-      await move(p, v + bonus, g);
+      await move(p, steps, g);
       await afterLanding(p, g, true);
       guard(g);
       await scuffle(p, g);
@@ -1926,6 +1967,14 @@
     } catch (e) {
       if (e !== CANCEL) throw e;
     }
+  }
+
+  // The Ring's pull: the hobbit strictly in the lead inside Mordor gets −1 on rolls, while two or more are still racing.
+  function ringPull(p) {
+    if (!p || p.place || BOARD.landOf(geo)[p.node] !== 'mordor') return false;
+    const racing = players.filter((q) => !q.place);
+    if (racing.length < 2) return false;
+    return racing.every((q) => q === p || geo.dist[q.node] > geo.dist[p.node]);
   }
 
   async function afterLanding(p, g, fromDie) {
@@ -2092,7 +2141,8 @@
       const onFork = !p.place && !!NODES[p.node].fork;
       const badges = (p.bonus && !p.place ? '<span class="pbadge rest" title="+1 on the next roll">🍃 +1</span>' : '') +
         (onFork ? '<span class="pbadge short" title="Next move takes the shortcut">➜ Shortcut</span>' : '') +
-        (p.skip && !p.place ? '<span class="pbadge skip" title="Misses the next turn">Skip</span>' : '');
+        (p.skip && !p.place ? '<span class="pbadge skip" title="Misses the next turn">Skip</span>' : '') +
+        (ringPull(p) ? '<span class="pbadge ring" title="−1 on rolls while leading in Mordor"><svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3.8" fill="none" stroke="#f0c24a" stroke-width="2.2"/></svg>−1</span>' : '');
       if (p.mothsEl) p.mothsEl.setAttribute('display', p.bonus && !p.place && !reduceMotion() ? 'inline' : 'none');
       const bEl = $('.pbadges', el);
       if (bEl.innerHTML !== badges) bEl.innerHTML = badges;
@@ -2101,6 +2151,7 @@
       $('.pwins', el).textContent = series.games ? winsText(series.wins[p.seat]) : '';
       el.setAttribute('aria-label', p.name + ': ' + $('.pwhere', el).textContent + (active ? ', current turn' : ''));
     });
+    eyeBeam();
   }
   function setStatus(p, html) {
     elStatus.innerHTML = '<span class="st-face" style="--pc:' + p.h.color + '">' + HB.portrait(p.h, 'st-portrait') + '</span><span><b style="color:' + p.h.light + '">' + esc(p.name) + '</b> ' + html + '</span>';
@@ -2217,6 +2268,7 @@
   function toSetup() {
     gen++;
     playing = false; awaitingRoll = false;
+    eyeBeam();
     resetSeries();
     closeModal();
     stopConfetti();
