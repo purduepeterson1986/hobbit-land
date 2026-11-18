@@ -535,6 +535,51 @@
       '<path d="M1372,700 l14,8 l-4,12 l16,6 M1548,610 l-10,14 l8,10 M1420,800 l18,-6 l6,12 M1560,780 l-12,10 l4,12 M1356,620 l10,10" stroke="#d2541c" stroke-width="1.2" fill="none" opacity=".45" stroke-linecap="round" stroke-linejoin="round"/>';
   }
 
+  // Which spaces turn over a card this game: CARD_SHARE of the ordinary spaces, chosen at random,
+  // but never more than CARD_RUN_CAP card spaces, or BLANK_RUN_CAP blank spaces, in a row along any way
+  // through the map (the long road or either shortcut). Forks and resting places are skipped when counting.
+  const CARD_SHARE = 0.35;
+  const CARD_RUN_CAP = 4;
+  const BLANK_RUN_CAP = 5;
+  const capFor = (card) => (card ? CARD_RUN_CAP : BLANK_RUN_CAP);
+  function pickCardSpaces(geo, share) {
+    const nodes = geo.nodes;
+    const eligible = (n) => (n.kind === 'path' || n.kind === 'landmark') && !n.rest;
+    // every way from Bag End to Mount Doom: at each fork, the long road or the shortcut
+    const ways = [];
+    (function walk(id, seq) {
+      const n = nodes[id];
+      const s = eligible(n) ? seq.concat(n) : seq;
+      if (n.next == null) { ways.push(s); return; }
+      walk(n.next, s);
+      if (n.alt != null) walk(n.alt, s);
+    })(geo.start, []);
+    const runsOK = () => ways.every((w) => {
+      let run = 0;
+      for (let i = 0; i < w.length; i++) { run = i && w[i].card === w[i - 1].card ? run + 1 : 1; if (run > capFor(w[i].card)) return false; }
+      return true;
+    });
+    // Go along the long road, then each shortcut. Each space is a card with the chance that keeps the total
+    // near the share, unless the spaces just before it already make a full run, which forces the other kind.
+    const order = [];
+    const seen = new Set();
+    ways.forEach((w) => w.forEach((n) => { if (!seen.has(n.id)) { seen.add(n.id); order.push(n); } }));
+    const prevOf = new Map();
+    ways.forEach((w) => w.forEach((n, i) => { if (i && !prevOf.has(n.id)) prevOf.set(n.id, w[i - 1]); }));
+    const target = Math.round(order.length * share);
+    for (let tries = 0; tries < 200; tries++) {
+      let left = target;
+      order.forEach((n, i) => {
+        let same = 0, p = prevOf.get(n.id), last = p ? p.card : null;
+        while (p && p.card === last && same < capFor(last)) { same++; p = prevOf.get(p.id); }
+        const want = Math.random() < left / (order.length - i);
+        n.card = same >= capFor(last) ? !last : want;
+        if (n.card) left--;
+      });
+      if (runsOK()) return;
+    }
+  }
+
   /* ---------- dress the board for one game ---------- */
   function dress(geo, opts) {
     opts = opts || {};
@@ -543,12 +588,7 @@
     const season = SEASONS[pick(Object.keys(SEASONS))];
     const time = TIMES[pick(Object.keys(TIMES))];
 
-    // Which spaces turn over a card this game: about 40% of the ordinary spaces.
-    const eligible = nodes.filter((n) => (n.kind === 'path' || n.kind === 'landmark') && !n.rest);
-    eligible.forEach((n) => { n.card = false; });
-    const order = eligible.slice();
-    for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
-    order.slice(0, Math.round(eligible.length * (opts.cardShare == null ? 0.4 : opts.cardShare))).forEach((n) => { n.card = true; });
+    pickCardSpaces(geo, opts.cardShare == null ? CARD_SHARE : opts.cardShare);
 
     // Everything is placed away from the road and from the landmark drawings.
     const roadPts = [];

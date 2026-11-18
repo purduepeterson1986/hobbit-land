@@ -32,7 +32,7 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
 
 ## Every game is different
 
-- About 40% of the ordinary spaces are card spaces, chosen at random each game.
+- About 35% of the ordinary spaces are card spaces, chosen at random each game. There are never more than 4 card spaces, or 5 blank spaces, in a row on any way through the map (forks and resting places don't count).
 - Each card is made up when it is turned over: forward, back or stay, and how many spaces.
 - The scenery is rearranged each game: trees, rocks, sheep, horses, clouds and birds move around, and the season (spring, summer or autumn) and time of day (morning, midday or evening) change.
 - During play, flocks of birds now and then fly across the map.
