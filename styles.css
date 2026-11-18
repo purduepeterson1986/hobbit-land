@@ -374,6 +374,27 @@ h1, h2, p { margin: 0; }
 @keyframes bush-in { from { opacity: 0; } }
 .chase-bush.shaking .bush-shake { animation: bush-shake .12s ease-in-out 6 alternate; transform-box: fill-box; transform-origin: 50% 100%; }
 @keyframes bush-shake { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
+/* forest creatures: eyes in Mirkwood, a spider on its thread, a deer or fox */
+.mk-eyes { opacity: 0; animation: mk-eyes 6.4s ease both; }
+@keyframes mk-eyes { 0% { opacity: 0; } 12%, 82% { opacity: 1; } 100% { opacity: 0; } }
+.mk-blink { animation: mk-blink 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes mk-blink { 0%, 44%, 52%, 100% { transform: scaleY(1); } 48% { transform: scaleY(.1); } }
+.mk-look { animation: mk-look 3.2s ease-in-out infinite; }
+@keyframes mk-look { 0%, 30% { transform: translateX(0); } 40%, 60% { transform: translateX(-1.6px); } 70%, 100% { transform: translateX(1.4px); } }
+.mk-spider { animation: sp-fade 8s ease both; }
+@keyframes sp-fade { 0% { opacity: 0; } 6%, 92% { opacity: 1; } 100% { opacity: 0; } }
+.sp-drop { animation: sp-drop 8s ease-in-out both; }
+@keyframes sp-drop { 0%, 8% { transform: translateY(0); } 34%, 66% { transform: translateY(var(--drop)); } 92%, 100% { transform: translateY(0); } }
+.sp-thread { animation: sp-thread 8s ease-in-out both; transform-box: fill-box; transform-origin: 50% 0; }
+@keyframes sp-thread { 0%, 8% { transform: scaleY(0); } 34%, 66% { transform: scaleY(1); } 92%, 100% { transform: scaleY(0); } }
+.sp-legs { animation: sp-wiggle .3s ease-in-out infinite alternate; transform-box: fill-box; }
+.sp-legs.l { transform-origin: 100% 40%; }
+.sp-legs.r { transform-origin: 0% 40%; animation-direction: alternate-reverse; }
+@keyframes sp-wiggle { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+.chaser.stroll .trot { animation-duration: .35s; }
+.chaser.stroll .leg-a, .chaser.stroll .leg-b { animation-duration: .45s; }
+.deer-head { transition: transform .45s ease; }
+.grazing .deer-head { transform: rotate(105deg); }
 /* the moving scenes on forward / back / stay cards */
 .bf-wings { animation: bf-flap .14s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
 @keyframes bf-flap { to { transform: scaleX(.25); } }

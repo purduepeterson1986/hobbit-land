@@ -1113,7 +1113,10 @@
     { id: 'nazgul', weight: 1, run: () => fellBeast() },
     { id: 'shadowfax', weight: 1, run: () => shadowfax() },
     { id: 'goblin', weight: 2, run: () => goblinChase() },
-    { id: 'heroes', weight: 2, run: () => heroChase() }
+    { id: 'heroes', weight: 2, run: () => heroChase() },
+    { id: 'eyes', weight: 2, run: () => mirkwoodEyes() },
+    { id: 'spider', weight: 2, run: () => mirkwoodSpider() },
+    { id: 'forest', weight: 2, run: () => forestVisitor() }
   ];
   function maybeVisitor() {
     turnsSinceVisitor++;
@@ -1571,6 +1574,10 @@
   // Is (x, y) a clear place for a runner's feet: on the board, away from the road spaces,
   // the title box, the compass and the walkway above the title?
   let chaseLabels = [];   // place names on the map, so runners never cross over the writing
+  function loadChaseLabels() {
+    chaseLabels = [];
+    layer('labels').querySelectorAll('text').forEach((t) => { try { const b = t.getBBox(); if (b.width) chaseLabels.push(b); } catch (e) { /* not drawn yet */ } });
+  }
   function chaseClear(x, y) {
     if (x < 50 || x > 1510 || y < 105 || y > 885) return false;
     if (x < 410 && y > 670) return false;               // the Hobbit Land title box
@@ -1581,8 +1588,7 @@
   }
   // A serpentine path about len long that stays clear of the road the whole way. Null if none is found.
   function windingPath(len) {
-    chaseLabels = [];
-    layer('labels').querySelectorAll('text').forEach((t) => { try { const b = t.getBBox(); if (b.width) chaseLabels.push(b); } catch (e) { /* not drawn yet */ } });
+    loadChaseLabels();
     for (let tries = 0; tries < 300; tries++) {
       let x = 70 + Math.random() * 1420, y = 120 + Math.random() * 750;
       if (!chaseClear(x, y)) continue;
@@ -1729,6 +1735,141 @@
       return t < tStop + 3.7;
     }, () => { orcs.forEach((o) => o.r.g.remove()); heroes.forEach((h) => h.r.g.remove()); });
     return (tStop + 3.9) * 1000;
+  }
+
+  /* ---------- creatures of the forests ---------- */
+  // Trees drawn in a box of the map (x0, y0, x1, y1, by the foot of the tree), in random order.
+  // Each tree's data-y is the middle of its crown, 16 above its foot.
+  function treesIn(x0, y0, x1, y1) {
+    const t = reactors.filter((r) => r.el.classList.contains('rx-tree') && r.x > x0 && r.x < x1 && r.y + 16 > y0 && r.y + 16 < y1)
+      .map((r) => ({ x: r.x, y: r.y + 16 }));
+    for (let i = t.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [t[i], t[j]] = [t[j], t[i]]; }
+    return t;
+  }
+  const MIRKWOOD = [1390, 180, 1595, 425];
+  const nearSpace = (x, y, d) => NODES.some((n) => Math.hypot(n.x - x, n.y - y) < d);
+
+  // Pairs of glowing eyes blink in the dark under the trees of Mirkwood, look about, and are gone.
+  function mirkwoodEyes() {
+    if (reduceMotion()) return false;
+    const trees = treesIn(...MIRKWOOD).filter((t) => !nearSpace(t.x, t.y, 34));
+    if (trees.length < 2) return false;
+    const n = Math.min(trees.length, 2 + Math.floor(Math.random() * 3));
+    const g = document.createElementNS(SVGNS, 'g');
+    g.setAttribute('class', 'mk-eyes-all');
+    let s = '';
+    trees.slice(0, n).forEach((t, i) => {
+      const x = t.x + (Math.random() < 0.5 ? -9 : 9), y = t.y - 7 - Math.random() * 4;
+      const col = Math.random() < 0.7 ? '#ffd23f' : '#ff6a3a';
+      const eye = (dx) => '<circle cx="' + dx + '" cy="0" r="3.4" fill="' + col + '" opacity=".35"/><ellipse cx="' + dx + '" cy="0" rx="1.7" ry="1.4" fill="' + col + '"/><circle cx="' + (dx + 0.4) + '" cy="0" r=".55" fill="#1a1208"/>';
+      s += '<g transform="translate(' + x.toFixed(1) + ',' + y.toFixed(1) + ')"><g class="mk-eyes" style="animation-delay:' + (i * 0.9).toFixed(1) + 's">' +
+        '<ellipse cx="0" cy="0" rx="9" ry="5.4" fill="#0c120a" opacity=".78"/>' +
+        '<g class="mk-look" style="animation-delay:-' + (Math.random() * 3).toFixed(1) + 's"><g class="mk-blink" style="animation-delay:-' + (Math.random() * 2.6).toFixed(1) + 's">' + eye(-3) + eye(3) + '</g></g></g></g>';
+    });
+    g.innerHTML = s;
+    layer('critters').appendChild(g);
+    const ms = 7000 + (n - 1) * 900;
+    setTimeout(() => g.remove(), ms);
+    return ms + 300;
+  }
+
+  // A spider of Mirkwood lets itself down on a thread from a tree, wiggles, and climbs back up.
+  function mirkwoodSpider() {
+    if (reduceMotion()) return false;
+    const drop = 34;
+    const tree = treesIn(...MIRKWOOD).find((t) => !nearSpace(t.x + 6, t.y - 20 + drop, 30) && !nearSpace(t.x + 6, t.y, 30));
+    if (!tree) return false;
+    const leg = (side, i) => {
+      const y = -1.6 + i * 1.1, sx = side * 2.2, kx = side * (5.6 + (i % 2)), ky = y - 2.6 + i * 0.6, fx = side * (7.4 + (i === 1 || i === 2 ? 0.6 : 0)), fy = y + 2.2 + i * 0.5;
+      return '<path d="M' + sx + ',' + y.toFixed(1) + ' L' + kx + ',' + ky.toFixed(1) + ' L' + fx.toFixed(1) + ',' + fy.toFixed(1) + '" stroke="#1a1418" stroke-width=".9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+    };
+    const legs = (side) => '<g class="sp-legs ' + (side < 0 ? 'l' : 'r') + '">' + [0, 1, 2, 3].map((i) => leg(side, i)).join('') + '</g>';
+    const g = document.createElementNS(SVGNS, 'g');
+    g.setAttribute('transform', 'translate(' + (tree.x + 6).toFixed(1) + ',' + (tree.y - 20).toFixed(1) + ')');
+    g.setAttribute('class', 'mk-spider');
+    g.innerHTML = '<rect class="sp-thread" x="-.3" y="0" width=".6" height="' + drop + '" fill="#e8e4d8" opacity=".85"/>' +
+      '<g class="sp-drop" style="--drop:' + drop + 'px"><g transform="scale(1.7)">' + legs(-1) + legs(1) +
+      '<ellipse cx="0" cy="-2.6" rx="3.4" ry="4" fill="#2a2228"/><circle cx="0" cy="1.6" r="2.4" fill="#2a2228"/>' +
+      '<path d="M-1.6,-4.4 Q0,-5.6 1.6,-4.4" stroke="#7a2a6a" stroke-width=".8" fill="none"/>' +
+      '<circle cx="-0.9" cy="2" r=".9" fill="#fff"/><circle cx="0.9" cy="2" r=".9" fill="#fff"/><circle cx="-0.8" cy="2.2" r=".45" fill="#111"/><circle cx="1" cy="2.2" r=".45" fill="#111"/></g></g>';
+    layer('critters').appendChild(g);
+    setTimeout(() => g.remove(), 8200);
+    return 8500;
+  }
+
+  // a deer: a slim, spotted roe deer with little antlers. Drawn facing right, feet at (0,0).
+  function deerArt() {
+    const coat = '#a8743e', far = '#8a5a2c', hoof = (x) => '<path d="M' + (x - 1.2) + ',-1.6 h2.4 v1.6 h-2.4 Z" fill="#3a2614"/>';
+    return '<g class="trot">' +
+      limb('leg-b', 'M-8,-16 L-9,-1.4', far, 2, hoof(-9)) + limb('leg-a', 'M8,-16 L8.6,-1.4', far, 2, hoof(8.6)) +
+      '<path d="M-13.6,-22 q-3,-1 -2.6,-4 q2.4,.6 3.4,2.6 Z" fill="#f3ead8"/>' +
+      '<ellipse cx="0" cy="-20" rx="13.4" ry="6.4" fill="' + coat + '"/><ellipse cx="0" cy="-16.6" rx="10" ry="3" fill="#e8d2a8" opacity=".75"/>' +
+      '<circle cx="-5" cy="-23" r=".9" fill="#f3ead8"/><circle cx="-1" cy="-24.2" r=".9" fill="#f3ead8"/><circle cx="3" cy="-23.4" r=".9" fill="#f3ead8"/><circle cx="-3" cy="-21" r=".8" fill="#f3ead8"/>' +
+      limb('leg-a', 'M-9,-16 L-10,-1.4', coat, 2.2, hoof(-10)) + limb('leg-b', 'M9,-16 L9.6,-1.4', coat, 2.2, hoof(9.6)) +
+      '<g transform="translate(9,-22)"><g class="deer-head">' +
+      '<path d="M-2.6,1 L2.4,-11 L6,-10 L3,2 Z" fill="' + coat + '"/>' +
+      '<path d="M2.6,-13.4 L-1.6,-19 M0,-16.4 L-3.4,-16.4 M3.6,-13.6 L4.4,-20 M4,-17 L6.8,-18.6" stroke="#6b4a2b" stroke-width="1.1" stroke-linecap="round"/>' +
+      '<path d="M1.4,-12 L-2.6,-15.4 L1,-10.4 Z" fill="#8a5a2c"/>' +
+      '<ellipse cx="6" cy="-11" rx="5.4" ry="3.2" transform="rotate(14 6 -11)" fill="' + coat + '"/>' +
+      '<circle cx="10.6" cy="-9.6" r="1.1" fill="#2a1a10"/><circle cx="5.4" cy="-12" r=".8" fill="#1a1208"/>' +
+      '</g></g></g>';
+  }
+  // a fox: red-orange, bushy white-tipped tail, black socks. Drawn facing right, feet at (0,0).
+  function foxArt() {
+    const coat = '#d9742e', sock = '#3a2614';
+    return '<g class="trot">' +
+      limb('leg-b', 'M-7,-9 L-7.4,-1', '#b85e22', 1.8, '<circle cx="-7.4" cy="-.8" r="1.2" fill="' + sock + '"/>') +
+      limb('leg-a', 'M6,-9 L6.4,-1', '#b85e22', 1.8, '<circle cx="6.4" cy="-.8" r="1.2" fill="' + sock + '"/>') +
+      '<path d="M-9,-12 C-16,-14 -22,-11 -24,-6 C-20,-7 -16,-8 -13,-8 C-11,-9 -10,-10 -9,-10 Z" fill="' + coat + '"/>' +
+      '<path d="M-24,-6 C-22.6,-8.4 -20.6,-9.4 -19,-9.2 C-20,-7.6 -21.6,-6.6 -24,-6 Z" fill="#fff"/>' +
+      '<ellipse cx="0" cy="-11" rx="10.4" ry="4.4" fill="' + coat + '"/><ellipse cx="1" cy="-8.6" rx="7" ry="2" fill="#f6e4c8" opacity=".8"/>' +
+      limb('leg-a', 'M-8,-9 L-8.6,-1', coat, 2, '<circle cx="-8.6" cy="-.8" r="1.3" fill="' + sock + '"/>') +
+      limb('leg-b', 'M7,-9 L7.6,-1', coat, 2, '<circle cx="7.6" cy="-.8" r="1.3" fill="' + sock + '"/>') +
+      '<g transform="translate(8,-12)"><g class="deer-head">' +
+      '<path d="M-1,-2 L4,-6.6 L5.6,-11 L7,-6.4 L13,-3.6 L12.6,-2 L4,1.6 Z" fill="' + coat + '"/>' +
+      '<path d="M4,-6.6 L5.6,-11 L6.4,-6.8 Z" fill="#3a2614"/>' +
+      '<path d="M5,-1.2 L12.6,-2 L4,1.6 Z" fill="#fff"/><circle cx="13" cy="-2.8" r=".9" fill="#1a1208"/><circle cx="7.4" cy="-4.4" r=".7" fill="#1a1208"/>' +
+      '</g></g></g>';
+  }
+  // A deer or a fox steps out of the Old Forest or Fangorn, stops to nibble the grass,
+  // looks about, and slips back into the trees.
+  function forestVisitor() {
+    if (reduceMotion()) return false;
+    loadChaseLabels();
+    const woods = [[300, 330, 580, 560], [850, 380, 1000, 560]];
+    const pool = treesIn(...woods[0]).concat(treesIn(...woods[1]));
+    let P = null;
+    for (const t of pool.slice(0, 30)) {
+      const dir = Math.random() < 0.5 ? -1 : 1, x0 = t.x + dir * 12, y0 = t.y + 3, x1 = x0 + dir * 46;
+      let ok = true;
+      for (let k = 0; k <= 46 && ok; k += 11.5) ok = chaseClear(x0 + dir * k, y0);
+      if (ok) { P = { pts: [[x0, y0], [x1, y0]], cum: [0, 46], len: 46 }; break; }
+    }
+    if (!P) return false;
+    const fox = Math.random() < 0.45;
+    const r = runner(fox ? foxArt() : deerArt(), 1.15);
+    r.g.classList.add('stroll');
+    const walk = 1.9, graze = 3.2, look = 1.4;
+    const tBack = walk + graze + look;
+    scene((t) => {
+      if (t < walk) {
+        placeRunner(r, P, (t / walk) * P.len, t / 0.6);
+      } else if (t < tBack) {
+        if (!r.g.classList.contains('still')) { placeRunner(r, P, P.len, 1); r.g.classList.add('still'); }   // stands at the end of its walk
+        const k = t - walk;
+        r.g.classList.toggle('grazing', k < graze && (k % 1.6) < 1.1);
+        if (k >= graze && !r.looked) { r.looked = true; r.face = -r.face; r.body.setAttribute('transform', 'scale(' + r.face + ',1)'); }
+      } else {
+        r.g.classList.remove('still', 'grazing');
+        const k = t - tBack, s = P.len * (1 - k / walk);
+        const at = pathAt(P, s);
+        r.g.setAttribute('transform', 'translate(' + at.x.toFixed(1) + ',' + at.y.toFixed(1) + ')');
+        r.g.setAttribute('opacity', Math.max(0, Math.min(1, (walk - k) / 0.7)).toFixed(2));
+        if (k >= walk) return false;
+      }
+      return true;
+    }, () => r.g.remove());
+    return (tBack + walk + 0.3) * 1000;
   }
 
   /* ---------- weather that comes and goes ---------- */
