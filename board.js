@@ -66,6 +66,21 @@
       }
       return list;
     }
+    if (MAP === 'river') {
+      // River's own short and long roads, on top of its normal stops
+      applyMap(list, MAP);
+      const m = list.find((st) => st.id === 'marshes'), e = list.find((st) => st.id === 'emynmuil');
+      if (length === 'short') {
+        // straight on from Amon Hen to Ithilien, east of the falls
+        list.splice(list.indexOf(m), 1);
+        list.splice(list.indexOf(e), 1);
+        Object.assign(ith, { at: [1120, 780], n: 6, via: [[1060, 690]] });
+      } else if (length === 'long') {
+        // from the Emyn Muil the road loops north-east to the edge of Mirkwood before coming down to the Dead Marshes
+        Object.assign(m, { n: 20, via: [[1100, 350], [1170, 250], [1290, 200], [1400, 260], [1390, 370], [1250, 400], [1170, 450]] });
+      }
+      return list;
+    }
     if (MAP === 'serpent') {
       // Serpent's own short and long roads, on top of its normal stops
       applyMap(list, MAP);
@@ -108,14 +123,29 @@
   /* ---------- preview routes: same stops and step counts, new geometry ---------- */
   const MAPS = {
     serpent: { name: 'Serpent', stops: {
-      maggot: { at: [150, 532], label: [-4, 40] }, bree: { at: [430, 200] }, weathertop: { at: [640, 400] }, rivendell: { at: [820, 190] },
+      maggot: { at: [150, 532], label: [-4, 40] }, bree: { at: [430, 200], via: [[250, 575], [370, 560], [440, 470], [440, 370], [420, 290]] }, weathertop: { at: [640, 400] }, rivendell: { at: [820, 190] },
       durin: { at: [1000, 400] }, lorien: { at: [1180, 200], via: [[1056, 446], [1120, 452], [1170, 440], [1196, 330]] }, amonhen: { at: [1320, 380] }, emynmuil: { at: [1150, 560] },
       marshes: { at: [960, 640] }, ithilien: { at: [760, 780] }, morgul: { at: [960, 860] }, ungol: { at: [1200, 760] } },
-      flip: ['ferry'] },
+      bow: { ferry: 40 } },   // the ferry bows gently north-west, the long road swings out south-east through the woods
     southern: { name: 'Southern Marches', stops: {
       maggot: { at: [260, 340], via: [[250, 178], [325, 194], [338, 262]] }, bree: { at: [420, 500], via: [[120, 390], [100, 470], [160, 560], [270, 572], [345, 540]] }, weathertop: { at: [580, 700] }, rivendell: { at: [760, 515] },
       durin: { at: [808, 172], via: [[760, 420], [790, 300]] }, lorien: { at: [1100, 330], via: [[880, 330], [990, 440], [1080, 440], [1110, 380]] }, amonhen: { at: [1280, 250] }, emynmuil: { at: [1420, 400] },
-      marshes: { at: [1240, 560] }, ithilien: { at: [1020, 720] }, morgul: { at: [1200, 840] }, ungol: { at: [1360, 840] } } }
+      marshes: { at: [1240, 560] }, ithilien: { at: [1020, 720] }, morgul: { at: [1200, 840] }, ungol: { at: [1360, 840] } } },
+    // River: the road crosses the Misty Mountains, then goes by boat down the Anduin from Lothlórien to Amon Hen
+    river: { name: 'River', stops: {
+      maggot: { at: [292, 318], via: [[186, 104], [262, 136], [250, 232]] },
+      bree: { at: [500, 300], via: [[330, 420], [380, 500], [470, 520], [540, 440]] },
+      weathertop: { at: [600, 110], via: [[530, 215], [555, 150]] },
+      rivendell: { at: [720, 200], via: [[680, 100]] },
+      durin: { at: [640, 420], via: [[690, 310]] },
+      lorien: { at: [960, 410], via: [[720, 380], [780, 300], [850, 270], [910, 330]] },
+      amonhen: { at: [980, 590], via: [[985, 500]] },
+      emynmuil: { at: [1080, 470], via: [[1060, 620]] },
+      marshes: { at: [1200, 540], via: [[1170, 450]] },
+      ithilien: { at: [1120, 800], via: [[1230, 650]] },
+      morgul: { at: [1250, 822], via: [[1180, 860]] },
+      ungol: { at: [1345, 680], via: [[1300, 746]] } },
+      flip: ['moria'] }
   };
   function applyMap(list, map) {
     const M = MAPS[map];
@@ -132,7 +162,7 @@
       let px = -dy / len, py = dx / len;
       if (py > 0) { px = -px; py = -py; }
       if ((MAPS[map].flip || []).includes(sc.id)) { px = -px; py = -py; }
-      const bow = 70;
+      const bow = (MAPS[map].bow || {})[sc.id] || 70;
       const via = [[f[0] + dx * 0.33 + px * bow, f[1] + dy * 0.33 + py * bow], [f[0] + dx * 0.66 + px * bow, f[1] + dy * 0.66 + py * bow]];
       return Object.assign({}, sc, { via, label: [f[0] + dx * 0.5 + px * bow * 0.9, f[1] + dy * 0.5 + py * bow * 0.9 - 8] });
     });
@@ -253,7 +283,8 @@
   const TIMES = {
     morning: { name: 'Morning', tint: 'rgba(255,190,110,.24)', sky: 'rgba(255,240,210,.0)' },
     midday: { name: 'Midday', tint: 'rgba(255,255,240,.12)', sky: 'rgba(0,0,0,0)' },
-    evening: { name: 'Evening', tint: 'rgba(90,40,120,.30)', sky: 'rgba(120,70,140,.06)' }
+    evening: { name: 'Evening', tint: 'rgba(90,40,120,.30)', sky: 'rgba(120,70,140,.06)' },
+    night: { name: 'Night', tint: 'rgba(0,0,0,0)', sky: 'rgba(0,0,0,0)' }   // the dark and the lights are drawn by the game (night layer)
   };
 
   /* ---------- small drawings, origin at the bottom centre ---------- */
@@ -584,7 +615,8 @@
   function dress(geo, opts) {
     opts = opts || {};
     const nodes = geo.nodes;
-    const SER = geo.map === 'serpent' || geo.map === 'southern';
+    const SER = geo.map !== 'classic';   // every map but Classic places its landmarks next to its own stops
+    const RIV = geo.map === 'river';
     const season = SEASONS[pick(Object.keys(SEASONS))];
     const time = TIMES[pick(Object.keys(TIMES))];
 
@@ -762,7 +794,7 @@
       place('durin', -44, 54, '<ellipse cx="0" cy="0" rx="40" ry="14" fill="#36505e" stroke="#26363f" stroke-width="1.4"/><ellipse cx="-7" cy="-2" rx="28" ry="8" fill="#46687a" opacity=".6"/>');
       place('lorien', 0, -10, '<ellipse cx="0" cy="-20" rx="110" ry="80" fill="#f7d774" opacity=".18"/>');
       place('lorien', 40, -10, '<g class="glints">' + [[-20, -60], [6, -78], [24, -52], [-4, -40], [14, -66]].map((p) => '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="2.2" fill="#fff6c4"/>').join('') + '</g>', 'sparkle');
-      place('amonhen', 0, 8, '<path d="M-46,0 Q-26,-40 0,-44 Q26,-40 46,0 Z" fill="#a6b07a" stroke="#6f7444" stroke-width="1.4"/><rect x="-7" y="-52" width="14" height="10" fill="#bdb6a6" stroke="#6b665c"/><rect x="-9" y="-44" width="18" height="3" fill="#a8a192"/>');
+      place('amonhen', RIV ? -72 : 0, 8, '<path d="M-46,0 Q-26,-40 0,-44 Q26,-40 46,0 Z" fill="#a6b07a" stroke="#6f7444" stroke-width="1.4"/><rect x="-7" y="-52" width="14" height="10" fill="#bdb6a6" stroke="#6b665c"/><rect x="-9" y="-44" width="18" height="3" fill="#a8a192"/>');
       place('emynmuil', -20, 6, rock('#a7a297', '#857f72', 1.3));
       place('emynmuil', 14, 10, rock('#a7a297', '#857f72', 1));
       place('emynmuil', 34, 2, rock('#a7a297', '#857f72', 0.8));
@@ -776,6 +808,30 @@
       if (stIth) place('ithilien', mumakAt[0], mumakAt[1], oliphaunt(), 'trunk');
       place('morgul', 0, 0, tower(16, 58, '#8a8f86', '#6f746b', '#7dff9c') + '<ellipse class="glow morgul-glow" cx="0" cy="-60" rx="14" ry="22" fill="#7dff9c" opacity=".25"/>', 'glow');
       place('ungol', -8, 0, tower(14, 44, '#6e665e', null, '#ffb25a'));
+      if (RIV) {
+        // the Argonath: two stone kings either side of the river, each with a hand raised in warning
+        const king = (dir) => shadow(12) + '<g transform="scale(' + dir + ',1)"><path d="M-14,3 L-11,-3 L11,-3 L14,3 Z" fill="#8f8a80" stroke="#5f5a50" stroke-width=".8"/>' +
+          '<path d="M-9,-3 L-8,-32 Q-7.6,-37 -4,-38 L4,-38 Q7.6,-37 8,-32 L9,-3 Z" fill="#b0aa9b" stroke="#6b665c" stroke-width="1"/>' +
+          '<path d="M2,-38 L4,-38 Q7.6,-37 8,-32 L9,-3 L3,-3 Z" fill="#958f81"/><path d="M-6,-20 H6 M-3,-34 L-2,-4" stroke="#857f72" stroke-width=".8"/>' +
+          '<path d="M6,-33 L15,-45 L16,-53" stroke="#6b665c" stroke-width="5.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M6,-33 L15,-45 L16,-53" stroke="#b0aa9b" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>' +
+          '<path d="M-6,-32 L-9,-18 L-8,-6" stroke="#6b665c" stroke-width="5" stroke-linecap="round" fill="none"/><path d="M-6,-32 L-9,-18 L-8,-6" stroke="#a49e90" stroke-width="3.2" stroke-linecap="round" fill="none"/>' +
+          '<path d="M-4.4,-38 V-45 Q0,-50 4.4,-45 V-38 Z" fill="#b0aa9b" stroke="#6b665c" stroke-width="1"/>' +
+          '<path d="M-4.8,-45 l1.6,-4.4 l1.6,3 l1.6,-4.6 l1.6,4.6 l1.6,-3 l1.6,4.4 Z" fill="#c4bdac" stroke="#6b665c" stroke-width=".6" stroke-linejoin="round"/>' +
+          '<path d="M-2,-42 h1.4 M1,-42 h1.4" stroke="#5f5a50" stroke-width=".9"/></g>';
+        const lo = geo.stopNode.lorien, ah = geo.stopNode.amonhen;
+        const mx = (lo.x + ah.x) / 2 + 6, my = (lo.y + ah.y) / 2 + 8;
+        land(my, wrap(mx - 42, my, 1, '', king(-1)));
+        land(my, wrap(mx + 42, my, 1, '', king(1)));
+        reserve(mx - 42, my - 24, 22); reserve(mx + 42, my - 24, 22);
+        // the falls of Rauros, just below Amon Hen, where the river starts again
+        land(ah.y + 40, wrap(ah.x + 1, ah.y + 42, 1, 'rx rx-splash', '<path d="M-13,-16 H13 L11,6 H-11 Z" fill="#cfeaf8"/><path class="flow" d="M-7,-16 V6 M0,-16 V6 M7,-16 V6" stroke="#fff" stroke-width="2" stroke-dasharray="4 4"/>' +
+          '<g class="spray"><circle cx="-10" cy="6" r="3" fill="#fff"/><circle cx="0" cy="8" r="3.6" fill="#fff"/><circle cx="10" cy="6" r="3" fill="#fff"/></g>', rx('splash', f1(ah.x), f1(ah.y + 30), 120)));
+        reserve(ah.x, ah.y + 34, 20);
+        // Caradhras, the snowy peak above the pass the long road climbs
+        land(226, wrap(842, 226, 1, 'rx rx-snow', mountainSVG(150, 128, { snow: true, fill: '#c8bba3', shade: '#a4957a' }) +
+          '<g class="flurry">' + [-24, -8, 10, 24, 0].map((x, i) => '<circle cx="' + x + '" cy="' + (-84 + i * 7) + '" r="3" fill="#fff"/>').join('') + '</g>', rx('snow', 842, 150, 120)));
+        reserve(842, 160, 66);
+      }
       place('ungol', 46, -6, '<g class="spider"><ellipse cx="0" cy="-12" rx="5" ry="6" fill="#2a1e1a"/><path d="M-4,-13 l-7,-5 M-4,-10 l-8,1 M4,-13 l7,-5 M4,-10 l8,1" stroke="#2a1e1a" stroke-width="1.4"/></g>', 'spider');
     }
     // Lights drifting among the trees of Lothlórien (brighter in the evening)
@@ -823,7 +879,9 @@
 
     /* ---- mountain ranges ---- */
     if (!SER) range([[1108, 40], [1132, 120], [1196, 290], [1186, 360], [1208, 470], [1176, 560]], 34, [52, 84], { snow: true, fill: '#c8bba3', shade: '#a4957a', ignore: 'moria' });
-    if (SER) range([[1040, 330], [1080, 270], [1130, 200], [1170, 130]], 34, [46, 70], { snow: true, fill: '#c8bba3', shade: '#a4957a' });
+    if (SER && !RIV) range([[1040, 330], [1080, 270], [1130, 200], [1170, 130]], 34, [46, 70], { snow: true, fill: '#c8bba3', shade: '#a4957a' });
+    // River: the Misty Mountains run north to south between Rivendell and the Anduin, with Moria beneath them
+    if (RIV) range([[796, 40], [806, 130], [792, 230], [820, 330], [812, 430], [790, 520]], 34, [50, 80], { snow: true, fill: '#c8bba3', shade: '#a4957a', ignore: 'moria' });
     if (!SER) range([[612, 640], [700, 628], [800, 618], [880, 610]], 34, [44, 66], { snow: true, fill: '#c9bea6', shade: '#a99a7e' });
     range([[1326, 562], [1420, 548], [1520, 546]], 30, [40, 60], { fill: '#4a3b34', shade: '#2f2521', line: '#1a1210', jagged: true });
     range([[1312, 600], [1302, 700], [1306, 800], [1300, 910]], 30, [40, 58], { fill: '#4a3b34', shade: '#2f2521', line: '#1a1210', jagged: true });
@@ -833,6 +891,7 @@
     let ambLeft = 12;
     const amb = () => (ambLeft > 0 && Math.random() < 0.3 ? (ambLeft--, ' amb') : '');
     const L1 = season.leaves;
+    const Z = (box, riverBox) => (RIV ? riverBox : box);   // the River map moves a few kinds of scenery next to its own places
     // The Shire
     scatter([24, 40, 440, 380], 22, 26, (x, y) => wrap(x, y, rand(0.8, 1.1), 'rx rx-tree' + amb(),
       season.extra && Math.random() < 0.4 ? roundTree(season.extra, pick(L1)) : roundTree(pick(L1), pick(L1)), rx('tree', f1(x), f1(y - 16), 70)), { road: 30 });
@@ -846,20 +905,20 @@
     scatter([560, 40, 990, 330], 10, 24, (x, y) => wrap(x, y, rand(0.8, 1.2), '', rock('#b9b1a0', '#9b9282')), { road: 26 });
     scatter([560, 40, 990, 330], 12, 20, (x, y) => wrap(x, y, 1, '', tuft('#7a8a4a')), { road: 22 });
     // Rivendell pines
-    scatter([970, 40, 1120, 250], 12, 20, (x, y) => wrap(x, y, rand(0.8, 1.1), 'rx rx-tree', pine('#3f6b4a', '#2f5538'), rx('tree', f1(x), f1(y - 16), 70)), { road: 28 });
+    scatter(Z([970, 40, 1120, 250], [600, 150, 780, 290]), 12, 20, (x, y) => wrap(x, y, rand(0.8, 1.1), 'rx rx-tree', pine('#3f6b4a', '#2f5538'), rx('tree', f1(x), f1(y - 16), 70)), { road: 28 });
     // Rohan grass, horses, Fangorn
-    scatter([600, 330, 960, 600], 22, 22, (x, y) => wrap(x, y, 1, '', tuft(pick(['#8a9a4a', '#a3a356']))), { road: 24 });
-    scatter([620, 340, 860, 600], irand(3, 5), 30, (x, y) => wrap(x, y, 1, 'rx rx-hop' + (Math.random() < 0.5 ? ' flip' : ''), horse(pick(['#7a4a2a', '#5a3a22', '#c9b48a', '#3a2a20'])), rx('hop', f1(x), f1(y - 8), 90)), { road: 30 });
+    scatter(Z([600, 330, 960, 600], [480, 540, 900, 700]), 22, 22, (x, y) => wrap(x, y, 1, '', tuft(pick(['#8a9a4a', '#a3a356']))), { road: 24 });
+    scatter(Z([620, 340, 860, 600], [500, 560, 880, 700]), irand(3, 5), 30, (x, y) => wrap(x, y, 1, 'rx rx-hop' + (Math.random() < 0.5 ? ' flip' : ''), horse(pick(['#7a4a2a', '#5a3a22', '#c9b48a', '#3a2a20'])), rx('hop', f1(x), f1(y - 8), 90)), { road: 30 });
     scatter([850, 380, 1000, 560], 18, 18, (x, y) => wrap(x, y, rand(0.9, 1.2), 'rx rx-tree' + amb(), roundTree(pick(['#3f6b2e', '#335a26', '#4a7a36']), pick(['#2c4f20', '#3a6230'])), rx('tree', f1(x), f1(y - 16), 70)), { road: 30 });
     // Lothlórien
-    scatter([1190, 330, 1340, 560], 13, 26, (x, y) => wrap(x, y, rand(0.9, 1.15), 'rx rx-tree' + amb(), mallorn(), rx('tree', f1(x), f1(y - 20), 80)), { road: 30 });
+    scatter(Z([1190, 330, 1340, 560], [860, 360, 1080, 480]), 13, 26, (x, y) => wrap(x, y, rand(0.9, 1.15), 'rx rx-tree' + amb(), mallorn(), rx('tree', f1(x), f1(y - 20), 80)), { road: 30 });
     // Mirkwood and the lands by the river
     scatter([1390, 180, 1590, 420], 30, 22, (x, y) => wrap(x, y, rand(0.9, 1.15), 'rx rx-tree', pick([roundTree('#2f4a2a', '#253d22'), pine('#2b4430', '#1f3524')]), rx('tree', f1(x), f1(y - 16), 70)), { road: 30 });
     // Emyn Muil rocks
-    scatter([870, 580, 1080, 720], 16, 18, (x, y) => wrap(x, y, rand(0.9, 1.6), '', rock('#a7a297', '#857f72')), { road: 26 });
+    scatter(Z([870, 580, 1080, 720], [1020, 390, 1170, 530]), 16, 18, (x, y) => wrap(x, y, rand(0.9, 1.6), '', rock('#a7a297', '#857f72')), { road: 26 });
     // Dead Marshes reeds
-    scatter([690, 720, 920, 910], 16, 16, (x, y) => wrap(x, y, 1, '', reeds()), { road: 24 });
-    scatter([690, 720, 920, 910], 4, 40, (x, y) => wrap(x, y, 1, '', deadTree()), { road: 26 });
+    scatter(Z([690, 720, 920, 910], [1120, 480, 1290, 630]), 16, 16, (x, y) => wrap(x, y, 1, '', reeds()), { road: 24 });
+    scatter(Z([690, 720, 920, 910], [1120, 480, 1290, 630]), 4, 40, (x, y) => wrap(x, y, 1, '', deadTree()), { road: 26 });
     // Ithilien woods
     scatter([960, 760, 1240, 912], 12, 24, (x, y) => wrap(x, y, rand(0.85, 1.05), 'rx rx-tree' + amb(), roundTree(pick(['#5f9a3f', '#4f8a36', '#6fa94a']), pick(['#3f7a2e', '#5a8f40'])), rx('tree', f1(x), f1(y - 16), 70)), { road: 30 });
     // Mordor rocks and dead trees
@@ -895,7 +954,11 @@
 
   /* ---------- the parts of the map that are the same every game ---------- */
   // the Brandywine and the Anduin on each map
+  // River: the Anduin stops at Lothlórien and starts again below Amon Hen; the road between is the river itself
   const RIVERS = {
+    river: [{ w: 9, pts: [[404, -10], [408, 120], [398, 250], [412, 380], [426, 480], [436, 600], [466, 760], [496, 930]] },
+      { w: 12, pts: [[1070, -10], [1050, 110], [1018, 230], [992, 330], [972, 388]] },
+      { w: 12, pts: [[980, 612], [972, 700], [948, 800], [922, 930]] }],
     southern: [{ w: 9, pts: [[252, -10], [262, 120], [282, 250], [302, 350], [330, 450], [356, 560], [376, 700], [360, 820], [334, 930]] },
       { w: 11, pts: [[1440, -10], [1420, 180], [1400, 300], [1380, 420], [1340, 520], [1300, 620], [1262, 720], [1210, 930]] }],
     serpent: [{ w: 9, pts: [[318, -10], [326, 140], [336, 250], [364, 330], [384, 420], [350, 520], [320, 640], [336, 780], [330, 930]] },
@@ -951,8 +1014,11 @@
   // Shortcuts: [x, y] on the map.
   const LABEL_FIX = {
     classic: { maggot: [0, -34, 'middle'], bree: [-29, -17, 'end'], rivendell: [-29, 50, 'end'], amonhen: [-40, -23, 'end'], ithilien: [29, -17, 'start'], marshes: [-29, -17, 'end'] },
-    serpent: { bagend: [-23, 40, 'end'], bree: [-29, -17, 'end'], rivendell: [-34, 0, 'end'], amonhen: [17, -29, 'start'], ithilien: [-17, -29, 'end'], marshes: [23, 40, 'start'],
-      'c:ferry': [350, 419], 'c:moria': [1085, 285] },
+    serpent: { bagend: [-23, 40, 'end'], maggot: [12, -24, 'start'], bree: [-29, -17, 'end'], rivendell: [-34, 0, 'end'], amonhen: [17, -29, 'start'], ithilien: [-17, -29, 'end'], marshes: [23, 40, 'start'],
+      'c:ferry': [270, 344], 'c:moria': [1085, 285] },
+    river: { maggot: [-10, 36, 'end'], weathertop: [2, -40, 'middle'], durin: [58, 8, 'start'], lorien: [46, -60, 'middle'], amonhen: [-66, 46, 'middle'],
+      emynmuil: [26, -56, 'start'], 'emynmuil@long': [84, -78, 'middle'], marshes: [12, -24, 'start'], ithilien: [-6, 40, 'end'], ungol: [-2, 40, 'start'],
+      'c:ferry': [391, 204], 'c:moria': [802, 452] },
     southern: { maggot: [-17, -29, 'end'], bree: [-50, -29, 'end'], weathertop: [0, 46, 'middle'], rivendell: [-34, 0, 'end'], lorien: [29, 17, 'start'],
       amonhen: [-17, -29, 'end'], morgul: [0, 58, 'middle'], ungol: [-17, -29, 'end'], emynmuil: [-50, -29, 'end'], marshes: [-29, -17, 'end'],
       ithilien: [-17, -92, 'middle'], 'ithilien@short': [-40, -4, 'end'],
@@ -974,8 +1040,10 @@
     // (on the long road the way to Ithilien runs along the bottom of the oval, so the name sits a little higher there)
     if (ser) s += '<text class="map-label region" x="' + (geo.length === 'long' ? 712 : 740) + '" y="' + (geo.length === 'long' ? 842 : 870) + '" text-anchor="middle">Dead Marshes</text>';
     else if (geo.map === 'southern' && !geo.stops.some((st) => st.id === 'marshes')) s += '<text class="map-label region" x="1154" y="612" text-anchor="middle">Dead Marshes</text>';
-    else if (!geo.stops.some((st) => st.id === 'marshes')) s += '<text class="map-label region" x="790" y="836" text-anchor="middle">Dead Marshes</text>';
-    if (geo.map === 'southern' && !geo.stops.some((st) => st.id === 'emynmuil')) s += '<text class="map-label region" x="1430" y="470" text-anchor="middle">Emyn Muil</text>';
+    else if (geo.map === 'classic' && !geo.stops.some((st) => st.id === 'marshes')) s += '<text class="map-label region" x="790" y="836" text-anchor="middle">Dead Marshes</text>';
+    if (geo.map === 'river' && !geo.stops.some((st) => st.id === 'marshes')) s += '<text class="map-label region" x="1210" y="560" text-anchor="middle">Dead Marshes</text>' +
+      '<text class="map-label region" x="1090" y="480" text-anchor="middle">Emyn Muil</text>';
+    else if (geo.map === 'southern' && !geo.stops.some((st) => st.id === 'emynmuil')) s += '<text class="map-label region" x="1430" y="470" text-anchor="middle">Emyn Muil</text>';
     else if (!geo.stops.some((st) => st.id === 'emynmuil')) s += '<text class="map-label region" x="' + (ser ? 1000 : 960) + '" y="' + (ser ? 600 : 642) + '" text-anchor="middle">Emyn Muil</text>';
     (geo.shortcuts || SHORTCUTS).forEach((sc) => {
       const f = fix['c:' + sc.id];
@@ -985,7 +1053,8 @@
     [['Old Forest', 470, 372], ['Barrow-downs', 410, 600], ['Caradhras', 1160, 62], ['Fangorn', 925, 556], ['Rohan', 700, 400], ['Isengard', 690, 594], ['Mirkwood', 1490, 170],
       ['Mordor', 1440, 600], ['Anduin', 1365, 250], ['The Shire', 160, 38], ['Barad-dûr', 1592, 618, 'end'], ['Black Gate', 1360, 520], ['Misty Mountains', 1240, 30], ['Trollshaws', 884, 302]].forEach((l) => {
       if (geo.map !== 'classic' && !['Mordor', 'Barad-dûr', 'Black Gate', 'Mirkwood', 'The Shire', 'Misty Mountains', 'Anduin'].includes(l[0])) return;
-      const p = (geo.map === 'southern' && { Anduin: [1367, 242], 'Black Gate': [1372, 541] }[l[0]]) || [l[1], l[2]];
+      const p = (geo.map === 'southern' && { Anduin: [1367, 242], 'Black Gate': [1372, 541] }[l[0]]) ||
+        (geo.map === 'river' && { Anduin: [1100, 170], 'Misty Mountains': [930, 34], 'Black Gate': [1432, 520] }[l[0]]) || [l[1], l[2]];
       // Barad-dûr sits at the right edge, so its name ends there instead of being centred under the tower
       s += '<text class="map-label region" x="' + p[0] + '" y="' + p[1] + '" text-anchor="' + (l[3] || 'middle') + '">' + l[0] + '</text>';
     });
@@ -1007,15 +1076,19 @@
     gondor: { verge: '#6f9a48', vo: 0.4, road: '#cbc3a8', tex: '<path d="D" stroke="#b7ae92" stroke-width="19" stroke-dasharray="5 1.6" fill="none"/><path d="D" stroke="#7fa04f" stroke-width="2" stroke-dasharray="0.1 13" opacity=".7" fill="none" stroke-linecap="round"/>', stone: '#e4dfcc', edge: '#7a7462' },
     mordor: { verge: '#c84a1a', vo: 0.22, road: '#3b2d27', tex: '<path d="D" stroke="#e2541c" stroke-width="2" stroke-dasharray="1.5 8" opacity=".6" fill="none" stroke-linecap="round"/>', stone: '#5e4d44', edge: '#1d1411' },
     ferry: { verge: '#5f8fb0', vo: 0.4, road: '#a9cfe0', tex: '<path d="D" stroke="#fff" stroke-width="2" stroke-dasharray="6 10" opacity=".8" fill="none" stroke-linecap="round"/>', stone: '#d6c3a0', edge: '#5a4a3a' },
-    moria: { stone: '#8b8279', edge: '#2e2924' }
+    moria: { stone: '#8b8279', edge: '#2e2924' },
+    // down the Anduin in the elven boats: the spaces are little grey boats on the water
+    river: { verge: '#5f8fb0', vo: 0.55, road: '#8fc0dc', w: 26, tex: '<path class="flow" d="D" stroke="#e4f3fb" stroke-width="2" stroke-dasharray="10 18" opacity=".8" fill="none" stroke-linecap="round"/>', stone: '#d9d4c6', edge: '#5f5a50', boat: true }
   };
+  // the land a stretch of road takes on, by the stop it is heading to (the River map goes by boat to Amon Hen)
+  const landFor = (stop, map) => (map === 'river' && stop === 'amonhen' ? 'river' : STOP_LAND[stop]);
   // which land each space stands in, plus the long road in order (worked out once per board)
   function landOf(geo) {
     if (geo.land) return geo.land;
     const N = geo.nodes, land = {}, order = [];
     for (let n = N[geo.start]; n; n = n.next != null ? N[n.next] : null) order.push(n);
     let cur = 'mordor';
-    for (let i = order.length - 1; i >= 0; i--) { if (order[i].stop) cur = STOP_LAND[order[i].stop] || cur; land[order[i].id] = cur; }
+    for (let i = order.length - 1; i >= 0; i--) { if (order[i].stop) cur = landFor(order[i].stop, geo.map) || cur; land[order[i].id] = cur; }
     N.forEach((m) => { if (m.route !== 'main') land[m.id] = m.route === 'ferry' ? 'ferry' : 'moria'; });
     geo.land = land;
     geo.longRoad = order;
@@ -1092,7 +1165,7 @@
   function bridgesHTML(geo) {
     const main = geo.roads.find((r) => r.id === 'main');
     if (!main) return '';
-    const pts = main.pts;
+    const pts = main.pts, land = landOf(geo);
     let s = '';
     (RIVERS[geo.map] || RIVERS.classic).forEach((rv) => {
       const rp = curve(rv.pts, 0, rv.pts.length - 1, 48);
@@ -1100,6 +1173,9 @@
       const flush = () => {
         if (!run.length) return;
         const i = run[Math.floor(run.length / 2)], [x, y] = pts[i];
+        // no bridge where the road becomes the river, or right at a stop
+        const near = nearestOn(geo, 'main', x, y);
+        if (land[near.id] === 'river' || (near.stop && Math.hypot(near.x - x, near.y - y) < 30)) { run = []; return; }
         const a = pts[Math.min(pts.length - 1, i + 2)], b = pts[Math.max(0, i - 2)];
         const ang = Math.atan2(a[1] - b[1], a[0] - b[0]) * 180 / Math.PI;
         s += '<g transform="translate(' + f1(x) + ',' + f1(y) + ') rotate(' + f1(ang) + ')">' +

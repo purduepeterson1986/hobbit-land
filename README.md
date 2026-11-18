@@ -13,17 +13,18 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
    - **The Eagles carry you 5 spaces.** Your hobbit flies there, carried by an eagle.
    - **Swap places with another hobbit.** You trade places with another hobbit still on the road, chosen at random.
    - **Gollum steals your next turn.** A "Skip" badge shows on your name tag until that turn is missed.
-7. The first hobbit to reach Mount Doom wins. Play goes on until every place (2nd, 3rd, 4th) is decided.
+7. **River map only:** if your roll stops on a plain **boat** (between Lothlórien and Amon Hen), the current carries you **1 space** downstream. A boat with a card on it turns over a card instead, and the drift never turns over a card.
+8. The first hobbit to reach Mount Doom wins. Play goes on until every place (2nd, 3rd, 4th) is decided.
 
 ## The road
 
-- Each game uses one of three maps, picked at random: **Eriador**, **Serpent** (the road zig-zags across the map) or **Ithilien** (the road runs south first). The road is drawn differently on each, but every map has the same places, forks, resting places and number of spaces.
+- There are four maps: **Classic**, **Serpent** (the road zig-zags across the map), **South** (the road runs south first) and **River** (the road climbs over the Misty Mountains, then goes by boat down the Anduin from Lothlórien, past the Argonath, to Amon Hen and the falls of Rauros). Choose one in settings, or leave it on Random for a different map every game. The road is drawn differently on each, but every map has the same places, forks, resting places and number of spaces.
 - **Buckleberry Ferry:** a shortcut across the Brandywine, starting at Farmer Maggot's and rejoining the road at Bree.
 - **Mines of Moria:** a shortcut under the Misty Mountains, starting at the Doors of Durin and rejoining the road at Lothlórien.
 - Along the way: Bree, Weathertop, Rivendell, Lothlórien, Amon Hen, the Emyn Muil, the Dead Marshes, Ithilien, Minas Morgul and Cirith Ungol.
 - Reaching Mount Doom does not need an exact roll.
-- The road takes on the land it crosses: a sandy lane in the Shire, packed earth to Rivendell, grey paving with snow over Caradhras, a boardwalk into the Dead Marshes, Gondor paving in Ithilien and black ash in Mordor. The spaces are stepping stones in the same colours, with grass, pebbles and footprints along the sides and wooden bridges where the road crosses a river.
-- **Road length** (chosen in settings), the same on all three maps:
+- The road takes on the land it crosses: a sandy lane in the Shire, packed earth to Rivendell, grey paving with snow over Caradhras, a boardwalk into the Dead Marshes, Gondor paving in Ithilien and black ash in Mordor. On the River map, the stretch from Lothlórien to Amon Hen is the river itself, and its spaces are little elven boats (see rule 7). The spaces are stepping stones in the same colours, with grass, pebbles and footprints along the sides and wooden bridges where the road crosses a river.
+- **Road length** (chosen in settings), the same on all four maps:
 
   | Length | Spaces (long way) | With both shortcuts | Difference |
   |---|---|---|---|
@@ -35,12 +36,12 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
 
 - About 35% of the ordinary spaces are card spaces, chosen at random each game. There are never more than 4 card spaces, or 5 blank spaces, in a row on any way through the map (forks and resting places don't count).
 - Each card is made up when it is turned over: forward, back or stay, and how many spaces.
-- The scenery is rearranged each game: trees, rocks, sheep, horses, clouds and birds move around, and the season (spring, summer or autumn) and time of day (morning, midday or evening) change.
+- The scenery is rearranged each game: trees, rocks, sheep, horses, clouds and birds move around, and the season (spring, summer or autumn) and time of day (morning, midday, evening or night) change. At night the land goes dark under a moon and stars; lanterns glow along the road, windows are lit, fireflies drift over the Shire, and Mount Doom, the Eye, Minas Morgul and Lothlórien shine. The spaces and hobbits stay bright.
 - During play, flocks of birds now and then fly across the map.
 - **Visitors** (just for show): every few turns one may appear. Gollum peeks out from behind a rock near the leading hobbit; Gandalf's cart rolls through the Shire letting off fireworks; a great eagle glides over the Misty Mountains; a Black Rider gallops past; an Ent wakes in Fangorn and takes a few steps; a flock of crebain sweeps low across the map; Tom Bombadil skips by in his yellow boots; a Nazgûl on a winged beast circles over Mordor; Shadowfax gallops across open ground. Visitors that walk or ride always cross where there is no road.
 - **Passers-by** (just for show): every half minute or so, a small group crosses the open ground above the Hobbit Land title on the map: a Nazgûl rider, a band of orcs, two elves, Gandalf on foot, a hobbit leading a pony, two dwarves, or a pack of wargs.
-- **Weather** (just for show) comes and goes: a rain cloud drifting somewhere over the map, mist over the Dead Marshes, or snow on Caradhras. Silent lightning flickers now and then behind Barad-dûr, and on evening games a shooting star sometimes crosses the sky.
-- **Living places** (just for show): chimneys smoke at Bag End, Farmer Maggot's and Bree, and windows glow on evening games; soft lights drift among the trees of Lothlórien; Minas Morgul's green light pulses; the Doors of Durin light up when a hobbit stops there; the Eye of Sauron turns to watch the hobbit closest to Mount Doom.
+- **Weather** (just for show) comes and goes: a rain cloud drifting somewhere over the map, mist over the Dead Marshes, or snow on Caradhras. Silent lightning flickers now and then behind Barad-dûr, and on evening and night games a shooting star sometimes crosses the sky.
+- **Living places** (just for show): chimneys smoke at Bag End, Farmer Maggot's and Bree, and windows glow on evening and night games; soft lights drift among the trees of Lothlórien; Minas Morgul's green light pulses; the Doors of Durin light up when a hobbit stops there; the Eye of Sauron turns to watch the hobbit closest to Mount Doom.
 - **Little reactions** (just for show): sheep and horses trot out of the way when a hobbit passes; moths circle a hobbit who has rested until the +1 is used; a hobbit left standing a long time sits down for a rest or eats an apple.
 - **Celebrations:** fireworks when a hobbit finds a shortcut. When a hobbit reaches Mount Doom, the volcano erupts, the Free Peoples (hobbits, dwarves, elves, men and Gandalf) fade in above the Hobbit Land title and dance, and an eagle flies from Farmer Maggot's to Mount Doom and carries the hobbit home to Bag End. The dancers fade away when he is set down.
 
@@ -48,7 +49,7 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
 
 - **Players:** 2, 3 or 4, each a Person or the Computer. Picking a hobbit another player already has swaps the two.
 - **Road length:** Short, Normal or Long (see the table above).
-- **Map:** chosen at random each game from three layouts: Eriador (the road described above), Serpent (a zig-zag road across the map) or Ithilien (a road that runs south first). They share the same stops, forks, rest stops and lengths. The start message says which map is in play.
+- **Map:** Random (the default: a different map is picked every game), Classic (the road described above), Serpent (a zig-zag road across the map), South (a road that runs south first) or River (by boat down the Anduin). They share the same stops, forks, rest stops and lengths. The start message says which map is in play.
 - **Auto-tap Computer Cards:** off by default, so a card on a computer's turn waits for someone to press Continue. Turn it **On** and choose how long each card stays up (2, 5 or 10 seconds) before Continue is tapped automatically. This applies to computer players only; people always press Continue themselves.
 - Settings are remembered between visits. Win counts are kept while you press **Next game**, and start again when you go back to the settings.
 

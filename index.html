@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&display=swap">
   <!-- When any file below changes, change the ?v= tag on all of them so browsers fetch the new copies. -->
-  <link rel="stylesheet" href="styles.css?v=2026-11-26a">
+  <link rel="stylesheet" href="styles.css?v=2026-11-28a">
 </head>
 <body>
   <div class="backdrop" aria-hidden="true"></div>
@@ -52,6 +52,14 @@
         </div>
       </section>
 
+      <section class="panel" aria-labelledby="h-map">
+        <div class="panel-head">
+          <h2 id="h-map">Map</h2>
+          <div class="segmented small" id="map-pick" role="radiogroup" aria-label="Map"></div>
+        </div>
+        <p class="hint">Random picks a different map every game. River goes by boat down the Anduin from Lothlórien to Amon Hen, and stopping on a plain boat drifts you 1 space on.</p>
+      </section>
+
 
       <section class="panel" id="auto-panel" aria-labelledby="h-auto">
         <div class="panel-head">
@@ -72,6 +80,7 @@
           <li>If you stop exactly on a <span class="chip fork">fork</span>, your next move takes the shortcut. Pass a fork without stopping and you stay on the long road.</li>
           <li>Stop on a <span class="chip rest">resting place</span> (Bree, Rivendell or Lothlórien) and you get <b>+1</b> on your next roll.</li>
           <li>About one card in fifteen is a <b>rare card</b>: the Eagles carry you 5 spaces, you swap places with another hobbit, or Gollum steals your next turn.</li>
+          <li>On the River map, stop on a plain boat and the current carries you <b>1 space</b> downstream.</li>
           <li>Reach Mount Doom first to win. Play goes on until every place is decided.</li>
         </ol>
         <p class="hint">The card spaces and the scenery change every game.</p>
@@ -109,12 +118,20 @@
         <svg id="board" viewBox="0 0 1600 920" role="img" aria-label="The road from the Shire to Mount Doom">
           <defs>
             <linearGradient id="star-tail" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fffbe8" stop-opacity="0"/><stop offset="1" stop-color="#fffbe8" stop-opacity=".95"/></linearGradient>
+            <radialGradient id="nt-warm"><stop offset="0" stop-color="#ffc65a" stop-opacity=".95"/><stop offset=".35" stop-color="#ffc65a" stop-opacity=".45"/><stop offset="1" stop-color="#ffc65a" stop-opacity="0"/></radialGradient>
+            <radialGradient id="nt-fire"><stop offset="0" stop-color="#ff6a1a" stop-opacity=".95"/><stop offset=".35" stop-color="#ff6a1a" stop-opacity=".45"/><stop offset="1" stop-color="#ff6a1a" stop-opacity="0"/></radialGradient>
+            <radialGradient id="nt-green"><stop offset="0" stop-color="#7dff9c" stop-opacity=".95"/><stop offset=".35" stop-color="#7dff9c" stop-opacity=".45"/><stop offset="1" stop-color="#7dff9c" stop-opacity="0"/></radialGradient>
+            <radialGradient id="nt-silver"><stop offset="0" stop-color="#fff6c4" stop-opacity=".95"/><stop offset=".35" stop-color="#fff6c4" stop-opacity=".45"/><stop offset="1" stop-color="#fff6c4" stop-opacity="0"/></radialGradient>
+            <radialGradient id="nt-blue"><stop offset="0" stop-color="#bfe6ff" stop-opacity=".95"/><stop offset=".35" stop-color="#bfe6ff" stop-opacity=".45"/><stop offset="1" stop-color="#bfe6ff" stop-opacity="0"/></radialGradient>
+            <radialGradient id="nt-moon"><stop offset="0" stop-color="#e8f0ff" stop-opacity=".95"/><stop offset=".35" stop-color="#e8f0ff" stop-opacity=".45"/><stop offset="1" stop-color="#e8f0ff" stop-opacity="0"/></radialGradient>
+            <radialGradient id="nt-vig" cx=".5" cy=".5" r=".75"><stop offset=".55" stop-color="#0a0f2a" stop-opacity="0"/><stop offset="1" stop-color="#0a0f2a" stop-opacity=".55"/></radialGradient>
             <radialGradient id="mist-grad"><stop offset="0" stop-color="#eef3f2" stop-opacity=".8"/><stop offset="1" stop-color="#eef3f2" stop-opacity="0"/></radialGradient>
           </defs>
           <g id="l-terrain"></g>
           <g id="l-scenery"></g>
           <g id="l-landmarks"></g>
           <g id="l-road"></g>
+          <g id="l-night" pointer-events="none"></g>
           <g id="l-labels"></g>
           <g id="l-critters"></g>
           <g id="l-spaces"></g>
@@ -154,7 +171,7 @@
 
   <script src="hobbits.js?v=2026-11-17c"></script>
   <script src="cards.js?v=2026-11-17i"></script>
-  <script src="board.js?v=2026-11-26a"></script>
-  <script src="game.js?v=2026-11-26a"></script>
+  <script src="board.js?v=2026-11-28b"></script>
+  <script src="game.js?v=2026-11-28b"></script>
 </body>
 </html>

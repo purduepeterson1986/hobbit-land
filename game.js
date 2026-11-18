@@ -20,14 +20,15 @@
     hobbits: ['frodo', 'sam', 'merry', 'pippin'],   // which hobbit each seat plays (always all four, in some order)
     types: ['human', 'human', 'cpu', 'cpu'],
     length: 'normal',   // road length: short, normal or long
+    map: 'random',      // which map: random, or one of MAP_IDS
     sound: true,
     diceSound: true,    // the dice rolling sound on its own
     autoTap: false,     // computer players tap Continue on their own
     autoSecs: 5         // how long a computer's card stays up before that (2, 5 or 10)
   };
   const LENGTH_IDS = ['short', 'normal', 'long'];
-  const MAP_IDS = ['classic', 'serpent', 'southern'];
-  const MAP_NAMES = { classic: 'Eriador', serpent: 'Serpent', southern: 'Ithilien' };
+  const MAP_IDS = ['classic', 'serpent', 'southern', 'river'];
+  const MAP_NAMES = { classic: 'Classic', serpent: 'Serpent', southern: 'South', river: 'River' };
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
     if (saved && typeof saved === 'object') {
@@ -39,6 +40,7 @@
       }
       if (Array.isArray(saved.types)) saved.types.slice(0, 4).forEach((t, i) => { settings.types[i] = t === 'cpu' ? 'cpu' : 'human'; });
       if (LENGTH_IDS.includes(saved.length)) settings.length = saved.length;
+      if (saved.map === 'random' || MAP_IDS.includes(saved.map)) settings.map = saved.map;
       if (typeof saved.sound === 'boolean') settings.sound = saved.sound;
       if (typeof saved.diceSound === 'boolean') settings.diceSound = saved.diceSound;
       if (typeof saved.autoTap === 'boolean') settings.autoTap = saved.autoTap;
@@ -128,6 +130,7 @@
   const elCount = $('#player-count');
   const elSeats = $('#seats');
   const elLength = $('#road-length');
+  const elMap = $('#map-pick');
   const elAuto = $('#auto-tap');
   const elAutoSecs = $('#auto-secs');
   const elAutoSecsRow = $('#auto-secs-row');
@@ -143,6 +146,15 @@
       const b = e.target.closest('.seg');
       if (!b) return;
       settings.length = b.dataset.length;
+      Sound.click(); refreshSetup(); save();
+    });
+
+    elMap.innerHTML = ['random'].concat(MAP_IDS).map((k) =>
+      '<button type="button" class="seg" role="radio" data-map="' + k + '">' + (k === 'random' ? 'Random' : MAP_NAMES[k]) + '</button>').join('');
+    elMap.addEventListener('click', (e) => {
+      const b = e.target.closest('.seg');
+      if (!b) return;
+      settings.map = b.dataset.map;
       Sound.click(); refreshSetup(); save();
     });
 
@@ -208,6 +220,7 @@
     });
     mark(elCount, 'data-n', settings.players);
     mark(elLength, 'data-length', settings.length);
+    mark(elMap, 'data-map', settings.map);
     mark(elAuto, 'data-auto', settings.autoTap ? 'on' : 'off');
     mark(elAutoSecs, 'data-secs', settings.autoSecs);
     elAutoSecsRow.hidden = !settings.autoTap;
@@ -234,7 +247,7 @@
     });
     const names = [];
     for (let i = 0; i < settings.players; i++) names.push('<b>' + HB.byId(settings.hobbits[i]).name + '</b>' + (isCpu(i) ? ' (computer)' : ''));
-    elSummary.innerHTML = settings.players + ' players: ' + names.join(', ') + ' · ' + settings.length.charAt(0).toUpperCase() + settings.length.slice(1) + ' road';
+    elSummary.innerHTML = settings.players + ' players: ' + names.join(', ') + ' · ' + settings.length.charAt(0).toUpperCase() + settings.length.slice(1) + ' road · ' + (settings.map === 'random' ? 'Random map' : MAP_NAMES[settings.map] + ' map');
   }
 
   /* ============================================================
@@ -375,6 +388,16 @@
     d += ' Z';
     let s = '<path class="sp-stone" d="' + d + '" fill="' + fill + '" stroke="' + edge + '" stroke-width="2"/>' +
       '<path d="' + d + '" transform="translate(-2,-2.4) scale(.66)" fill="' + tint(fill, '#ffffff', 0.45) + '" opacity=".55"/>';
+    if (L.boat && !n.stop) {
+      // on the river the spaces are little elven boats, pointing downstream with a swan's-neck prow
+      const m = n.next != null ? geo.nodes[n.next] : n, a = Math.atan2(m.y - n.y, m.x - n.x) * 180 / Math.PI;
+      s = '<g transform="rotate(' + a.toFixed(0) + ')">' +
+        '<path d="M17,-1 C22,-3 24,-8 22,-12 C21,-14 18,-13 19,-11" stroke="' + edge + '" stroke-width="3.4" fill="none" stroke-linecap="round"/>' +
+        '<path d="M17,-1 C22,-3 24,-8 22,-12 C21,-14 18,-13 19,-11" stroke="' + tint(fill, '#ffffff', 0.3) + '" stroke-width="1.6" fill="none" stroke-linecap="round"/>' +
+        '<path class="sp-stone" d="M-20,0 C-15,-12 13,-12 20,0 C13,12 -15,12 -20,0 Z" fill="' + fill + '" stroke="' + edge + '" stroke-width="2"/>' +
+        '<path d="M-14,0 C-10,-7 9,-7 14,0 C9,7 -10,7 -14,0 Z" fill="' + tint(fill, '#ffffff', 0.45) + '" opacity=".6"/>' +
+        '<path d="M-6,-6.4 V6.4 M5,-6.4 V6.4" stroke="' + edge + '" stroke-width="1" opacity=".5"/></g>';
+    }
     if (L.snow && !n.card && !n.fork && !n.rest) s += '<path d="M-10,-9 Q-4,-15 4,-14.4 Q10,-13 12,-8 Q4,-11 -2,-10 Q-6,-8 -10,-9 Z" fill="#fbfbff" opacity=".95"/>';
     if (n.kind === 'fork') {
       s += '<path d="M0,9 V-10" stroke="#5a3d22" stroke-width="2.2"/>' +
@@ -417,6 +440,68 @@
     }
   }
 
+  // Night: a deep blue dark over the land and the road (under the place names, spaces and hobbits),
+  // with lanterns along the road, lit windows, fireflies, the great glows of Middle-earth, a moon and stars.
+  function nightHTML() {
+    const f = (v) => v.toFixed(1);
+    const glow = (x, y, r, c, op) => '<circle cx="' + f(x) + '" cy="' + f(y) + '" r="' + r + '" fill="url(#nt-' + c + ')" opacity="' + op + '"/>';
+    // where a drawing sits on the map, from the transforms of the groups around it (no layout needed)
+    const onMap = (el, x, y) => {
+      for (let e = el; e && e.id !== 'board'; e = e.parentNode) {
+        const t = e.transform && e.transform.baseVal.consolidate();
+        if (t) { const m = t.matrix; [x, y] = [m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f]; }
+      }
+      return [x, y];
+    };
+    let s = '<rect width="1600" height="920" fill="#121a46" opacity=".6"/><rect width="1600" height="920" fill="url(#nt-vig)"/>';
+    // lit windows on every house and hobbit hole
+    elBoard.querySelectorAll('#l-landmarks .win, #l-scenery .win').forEach((w) => {
+      const c = w.tagName === 'circle';
+      const lx = c ? +w.getAttribute('cx') : +w.getAttribute('x') + +w.getAttribute('width') / 2;
+      const ly = c ? +w.getAttribute('cy') : +w.getAttribute('y') + +w.getAttribute('height') / 2;
+      const [x, y] = onMap(w, lx, ly);
+      s += glow(x, y, 16, 'warm', 0.9) + '<circle class="nt-flicker" cx="' + f(x) + '" cy="' + f(y) + '" r="2.6" fill="#ffd25a"/>';
+    });
+    // lanterns on posts beside the road every few spaces (none in Mordor or on the river)
+    const land = BOARD.landOf(geo);
+    geo.longRoad.forEach((n, i) => {
+      if (i % 6 !== 3 || n.next == null || ['mordor', 'river'].includes(land[n.id])) return;
+      const m = NODES[n.next], dx = m.x - n.x, dy = m.y - n.y, d = Math.hypot(dx, dy) || 1;
+      let x, y;
+      for (const sd of [1, -1]) {
+        x = (n.x + m.x) / 2 - dy / d * 24 * sd; y = (n.y + m.y) / 2 + dx / d * 24 * sd;
+        if (!NODES.some((o) => Math.hypot(o.x - x, o.y - y) < 20)) break;
+      }
+      s += glow(x, y - 16, 40, 'warm', 0.75) +
+        '<g transform="translate(' + f(x) + ',' + f(y) + ')"><path d="M0,0 V-16 M0,-16 h4" stroke="#2a1d12" stroke-width="1.8" fill="none"/>' +
+        '<rect class="nt-flicker" x="1.6" y="-15" width="5" height="6.4" rx="1" fill="#ffd25a" stroke="#2a1d12" stroke-width=".9"/></g>';
+    });
+    // fires (Weathertop, deep in Moria)
+    elBoard.querySelectorAll('#l-landmarks .rx-fire').forEach((el) => { const [x, y] = onMap(el, 0, -8); s += glow(x, y, 46, 'fire', 0.9); });
+    // the great lights of Middle-earth
+    const at = (id) => geo.stopNode[id];
+    s += glow(1480, 790, 150, 'fire', 0.85) + glow(1480, 790, 60, 'fire', 1) + glow(1566, 442, 70, 'fire', 0.9);   // Mount Doom and the Eye
+    if (at('morgul')) s += glow(at('morgul').x, at('morgul').y - 50, 70, 'green', 0.8);
+    if (at('lorien')) s += glow(at('lorien').x, at('lorien').y - 40, 130, 'silver', 0.55);
+    if (at('rivendell')) s += glow(at('rivendell').x, at('rivendell').y - 20, 70, 'warm', 0.5);
+    if (at('durin')) s += glow(at('durin').x, at('durin').y - 20, 34, 'blue', 0.7);
+    if (at('marshes')) [[-30, -4], [24, -16], [-18, -30], [10, -40], [36, 6]].forEach((p) => { s += glow(at('marshes').x + p[0], at('marshes').y + p[1], 14, 'green', 0.9); });
+    // fireflies in the Shire and the Old Forest
+    for (let i = 0; i < 26; i++) {
+      s += '<circle class="nt-fly" cx="' + f(40 + Math.random() * 520) + '" cy="' + f(60 + Math.random() * 480) + '" r="1.8" fill="#eaffa0" style="--fx:' + f(Math.random() * 30 - 15) +
+        'px;--fy:' + f(Math.random() * 24 - 12) + 'px;animation-duration:' + f(3 + Math.random() * 4) + 's;animation-delay:-' + f(Math.random() * 6) + 's"/>';
+    }
+    // a full moon and twinkling stars
+    s += '<g opacity=".85">' + glow(1450, 70, 90, 'moon', 0.5) + '<circle cx="1450" cy="70" r="26" fill="#f4f1dc"/>' +
+      '<circle cx="1440" cy="62" r="4" fill="#dcd6bc"/><circle cx="1458" cy="80" r="5.4" fill="#dcd6bc"/><circle cx="1446" cy="84" r="2.6" fill="#dcd6bc"/>';
+    for (let i = 0; i < 90; i++) {
+      const x = Math.random() * 1600, y = Math.random() * 920;
+      if (NODES.some((n) => Math.abs(n.x - x) < 24 && Math.abs(n.y - y) < 24)) continue;
+      s += '<circle class="nt-star" cx="' + f(x) + '" cy="' + f(y) + '" r="' + f(0.6 + Math.random() * 1.1) + '" fill="#fffbe6" style="animation-duration:' + f(1.5 + Math.random() * 3) + 's;animation-delay:-' + f(Math.random() * 3) + 's"/>';
+    }
+    return s + '</g>';
+  }
+
   function renderBoard() {
     look = BOARD.dress(geo);
     layer('terrain').innerHTML = BOARD.terrainHTML(geo.map) + BOARD.cartoucheHTML(MAP_NAMES[geo.map]);
@@ -425,6 +510,7 @@
     layer('road').innerHTML = BOARD.roadHTML(geo);
     layer('labels').innerHTML = BOARD.labelsHTML(geo);
     layer('spaces').innerHTML = NODES.map(spaceSVG).join('');
+    layer('night').innerHTML = look.time.name === 'Night' ? nightHTML() : '';
     layer('sky').innerHTML = look.skyHTML;
     layer('tokens').innerHTML = '';
     layer('fx').innerHTML = '';
@@ -434,7 +520,7 @@
     layer('weather').innerHTML = '';
     layer('tint').setAttribute('fill', look.time.tint);
     elStage.dataset.season = look.season.name.toLowerCase();
-    elStage.dataset.time = Object.keys({ morning: 1, midday: 1, evening: 1 }).find((k) => look.time.name.toLowerCase() === k) || 'midday';
+    elStage.dataset.time = Object.keys({ morning: 1, midday: 1, evening: 1, night: 1 }).find((k) => look.time.name.toLowerCase() === k) || 'midday';
     reactors = [...elBoard.querySelectorAll('[data-rx]')].map((el) => ({ el, x: Number(el.dataset.x), y: Number(el.dataset.y), r: Number(el.dataset.r) || 100 }));
     elStage.classList.remove('intro'); void elStage.offsetWidth; elStage.classList.add('intro');
   }
@@ -871,11 +957,11 @@
     layer('terrain').appendChild(g);   // behind the dark tower
     setTimeout(() => g.remove(), 1400);
   }
-  // On evening games, a rare shooting star crosses the sky.
+  // On evening and night games, a rare shooting star crosses the sky.
   function scheduleStars(g) {
     setTimeout(() => {
       if (g !== gen || !playing) return;
-      if (!reduceMotion() && elLayer.hidden && look.time.name === 'Evening') shootingStar();
+      if (!reduceMotion() && elLayer.hidden && (look.time.name === 'Evening' || look.time.name === 'Night')) shootingStar();
       scheduleStars(g);
     }, 22000 + Math.random() * 38000);
   }
@@ -1472,7 +1558,7 @@
         '<ellipse cx="0" cy="6" rx="50" ry="7" fill="#737983"/></g></g></g>';
     } else if (kind === 'mist') {
       const st = NODES.find((n) => n.stop === 'marshes');
-      const cx = st ? st.x : 790, cy = st ? st.y : 820;
+      const cx = st ? st.x : mapNow === 'river' ? 1210 : 790, cy = st ? st.y : mapNow === 'river' ? 560 : 820;
       for (let i = 0; i < 7; i++) {
         const x = cx - 120 + Math.random() * 240, y = cy - 70 + Math.random() * 140;
         html += '<ellipse class="mist" style="animation-duration:' + (10 + Math.random() * 8).toFixed(1) + 's;animation-delay:-' + (Math.random() * 8).toFixed(1) + 's" cx="' + x.toFixed(0) + '" cy="' + y.toFixed(0) +
@@ -1480,7 +1566,7 @@
       }
     } else {
       for (let i = 0; i < 28; i++) {
-        const x = 1040 + Math.random() * 250, y = 30 + Math.random() * 90;
+        const x = (mapNow === 'river' ? 720 : 1040) + Math.random() * 250, y = 30 + Math.random() * 90;   // snow on Caradhras
         html += '<circle class="flake" style="animation-duration:' + (4 + Math.random() * 3).toFixed(1) + 's;animation-delay:-' + (Math.random() * 6).toFixed(1) + 's" cx="' + x.toFixed(0) + '" cy="' + y.toFixed(0) +
           '" r="' + (1.4 + Math.random() * 1.4).toFixed(1) + '" fill="#fff"/>';
       }
@@ -1739,8 +1825,8 @@
     closeModal();
     stopConfetti();
     elToast.classList.remove('show');
-    // Each game picks one of the three maps at random.
-    mapNow = MAP_IDS[Math.floor(Math.random() * MAP_IDS.length)];
+    // The map chosen in settings, or (on Random) one picked afresh every game.
+    mapNow = MAP_IDS.includes(settings.map) ? settings.map : MAP_IDS[Math.floor(Math.random() * MAP_IDS.length)];
     geo = boardFor(settings.length, mapNow);
     NODES = geo.nodes;
     START_DIST = geo.startDist;
@@ -1867,6 +1953,18 @@
       setStatus(p, 'rests at <b>' + esc(n.name) + '</b>: +1 on the next roll');
       await pause(2100);
       guard(g);
+      return;
+    }
+    // River map: stop on a plain boat after a roll and the current carries you one space downstream.
+    // Like a card move, that drift never turns over a card.
+    if (fromDie && !n.card && !n.stop && BOARD.LAND[BOARD.landOf(geo)[n.id]].boat) {
+      sparkle(n.x, n.y, '#bfe6fb', 12);
+      toast('The current carries ' + p.name + ' one space downstream.', p.h.color, 2000);
+      setStatus(p, 'drifts <b>1</b> space down the river');
+      await pause(900);
+      guard(g);
+      await move(p, 1, g);
+      await afterLanding(p, g, false);
       return;
     }
     if (fromDie && n.card) {

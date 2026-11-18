@@ -660,7 +660,20 @@ h1, h2, p { margin: 0; }
 /* lights drifting among the trees of Lothlórien */
 .mote { animation: mote ease-in-out infinite; opacity: 0; }
 @keyframes mote { 0% { opacity: 0; transform: translate(0, 0); } 30%, 70% { opacity: .75; } 100% { opacity: 0; transform: translate(var(--mx), var(--my)); } }
-[data-time="evening"] .mote { filter: drop-shadow(0 0 3px #ffe58a); }
+[data-time="evening"] .mote, [data-time="night"] .mote { filter: drop-shadow(0 0 3px #ffe58a); }
+/* night: the land goes dark; place names turn pale, the hobbits glow a little, clouds dim */
+[data-time="night"] .map-label { fill: #f3e6c4; stroke: rgba(14, 18, 44, .85); }
+[data-time="night"] .map-label.short { fill: #bfe0f5; }
+[data-time="night"] .map-label.region { fill: #d8c9a4; }
+[data-time="night"] .space .sp-shadow { fill: rgba(0, 0, 0, .45); }
+[data-time="night"] #l-tokens > g { filter: drop-shadow(0 0 4px rgba(255, 230, 160, .7)); }
+[data-time="night"] #l-sky { filter: brightness(.45) saturate(.6); opacity: .8; }
+.nt-star { animation: nt-twinkle ease-in-out infinite alternate; }
+@keyframes nt-twinkle { from { opacity: .25; } to { opacity: 1; } }
+.nt-flicker { animation: nt-flicker 2.6s ease-in-out infinite alternate; }
+@keyframes nt-flicker { 0% { opacity: .75; } 40% { opacity: 1; } 70% { opacity: .82; } 100% { opacity: .95; } }
+.nt-fly { animation: nt-fly ease-in-out infinite; filter: drop-shadow(0 0 3px #d8ff6a); }
+@keyframes nt-fly { 0%, 100% { opacity: 0; transform: translate(0, 0); } 25% { opacity: 1; } 50% { opacity: .2; transform: translate(var(--fx), var(--fy)); } 75% { opacity: 1; } }
 /* sheep and horses trot a few steps out of the way, then wander back */
 .rx-hop.scatter { animation: scatter 4s ease-in-out; }
 @keyframes scatter { 0% { transform: none; } 6% { transform: translate(calc(var(--ax) * .3), -4px); } 12% { transform: translate(calc(var(--ax) * .6), var(--ay)); } 18% { transform: translate(calc(var(--ax) * .85), calc(var(--ay) - 3px)); } 24%, 60% { transform: translate(var(--ax), var(--ay)); } 100% { transform: none; } }
