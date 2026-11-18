@@ -17,17 +17,18 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
 
 ## The road
 
-- **Buckleberry Ferry:** a shortcut across the Brandywine. The long road goes round through the Old Forest and the Barrow-downs.
-- **Mines of Moria:** a shortcut under the Misty Mountains. The long road climbs over the pass of Caradhras.
+- Each game uses one of three maps, picked at random: **Eriador**, **Serpent** (the road zig-zags across the map) or **Ithilien** (the road runs south first). The road is drawn differently on each, but every map has the same places, forks, resting places and number of spaces.
+- **Buckleberry Ferry:** a shortcut across the Brandywine, starting at Farmer Maggot's and rejoining the road at Bree.
+- **Mines of Moria:** a shortcut under the Misty Mountains, starting at the Doors of Durin and rejoining the road at Lothlórien.
 - Along the way: Bree, Weathertop, Rivendell, Lothlórien, Amon Hen, the Emyn Muil, the Dead Marshes, Ithilien, Minas Morgul and Cirith Ungol.
 - Reaching Mount Doom does not need an exact roll.
-- **Road length** (chosen in settings):
+- **Road length** (chosen in settings), the same on all three maps:
 
   | Length | Spaces (long way) | With both shortcuts | Difference |
   |---|---|---|---|
-  | Short | 74 | 60 | Skips the loops through the Emyn Muil and the Dead Marshes |
+  | Short | 74 | 60 | Skips the Emyn Muil and the Dead Marshes |
   | Normal | 85 | 71 | |
-  | Long | 100 | 86 | The Dead Marshes loop winds out west toward the Hobbit Land sign |
+  | Long | 100 | 86 | A long loop out to the Dead Marshes |
 
 ## Every game is different
 
@@ -35,9 +36,11 @@ A board game for 2 to 4 players, played in any web browser on a computer or an i
 - Each card is made up when it is turned over: forward, back or stay, and how many spaces.
 - The scenery is rearranged each game: trees, rocks, sheep, horses, clouds and birds move around, and the season (spring, summer or autumn) and time of day (morning, midday or evening) change.
 - During play, flocks of birds now and then fly across the map.
-- **Visitors** (just for show): every few turns one may appear. Gollum peeks out from behind a rock near the leading hobbit; Gandalf's cart rolls through the Shire letting off fireworks; a great eagle glides over the Misty Mountains; a Black Rider gallops through the Lone-lands; an Ent wakes in Fangorn and takes a few steps.
+- **Visitors** (just for show): every few turns one may appear. Gollum peeks out from behind a rock near the leading hobbit; Gandalf's cart rolls through the Shire letting off fireworks; a great eagle glides over the Misty Mountains; a Black Rider gallops past; an Ent wakes in Fangorn and takes a few steps; a flock of crebain sweeps low across the map; Tom Bombadil skips by in his yellow boots; a Nazgûl on a winged beast circles over Mordor; Shadowfax gallops across open ground. Visitors that walk or ride always cross where there is no road.
 - **Passers-by** (just for show): every half minute or so, a small group crosses the open ground above the Hobbit Land title on the map: a Nazgûl rider, a band of orcs, two elves, Gandalf on foot, a hobbit leading a pony, two dwarves, or a pack of wargs.
-- **Weather** (just for show) comes and goes: a rain cloud drifting somewhere over the map, mist over the Dead Marshes, or snow on Caradhras.
+- **Weather** (just for show) comes and goes: a rain cloud drifting somewhere over the map, mist over the Dead Marshes, or snow on Caradhras. Silent lightning flickers now and then behind Barad-dûr, and on evening games a shooting star sometimes crosses the sky.
+- **Living places** (just for show): chimneys smoke at Bag End, Farmer Maggot's and Bree, and windows glow on evening games; soft lights drift among the trees of Lothlórien; Minas Morgul's green light pulses; the Doors of Durin light up when a hobbit stops there; the Eye of Sauron turns to watch the hobbit closest to Mount Doom.
+- **Little reactions** (just for show): sheep and horses trot out of the way when a hobbit passes; moths circle a hobbit who has rested until the +1 is used; a hobbit left standing a long time sits down for a rest or eats an apple.
 - **Celebrations:** fireworks when a hobbit finds a shortcut. When a hobbit reaches Mount Doom, the volcano erupts, the Free Peoples (hobbits, dwarves, elves, men and Gandalf) fade in above the Hobbit Land title and dance, and an eagle flies from Farmer Maggot's to Mount Doom and carries the hobbit home to Bag End. The dancers fade away when he is set down.
 
 ## Settings

@@ -258,14 +258,21 @@
     const key = map + '|' + length;
     if (BOARDS[key]) return BOARDS[key];
     const b = BOARD.build(length, map);
-    // A short "where am I" name for every space: the nearest named place, or the shortcut it is on.
-    const stopNodes = b.nodes.filter((n) => n.name);
+    // A short "where am I" name for every space: the named place it is fewest steps from along the road
+    // (the one behind it or the one ahead), or the shortcut it is on.
+    const road = [];
+    for (let n = b.nodes[b.start]; n; n = n.next != null ? b.nodes[n.next] : null) road.push(n);
+    const behind = [], ahead = [];
+    road.forEach((n, i) => { behind[i] = n.name ? i : i > 0 ? behind[i - 1] : 0; });
+    for (let i = road.length - 1; i >= 0; i--) ahead[i] = road[i].name ? i : ahead[i + 1];
     b.nodes.forEach((n) => {
       if (n.name) { n.place = 'At ' + n.name; return; }
       if (n.route !== 'main') { n.place = 'On the ' + BOARD.SHORTCUTS.find((sc) => sc.id === n.route).name; return; }
-      let best = null, bd = Infinity;
-      stopNodes.forEach((st) => { const d = Math.hypot(st.x - n.x, st.y - n.y); if (d < bd) { bd = d; best = st; } });
-      n.place = 'Near ' + best.name;
+    });
+    road.forEach((n, i) => {
+      if (n.name) return;
+      const j = i - behind[i] <= ahead[i] - i ? behind[i] : ahead[i];
+      n.place = 'Near ' + road[j].name;
     });
     b.startDist = b.dist[b.start];
     BOARDS[key] = b;
@@ -356,6 +363,31 @@
       '<ellipse class="sp-shadow" cx="1.5" cy="3" rx="17" ry="13"/>' + inner + '</g></g>';
   }
 
+  // The compass rose sits in open ground in the lower middle of the map, clear of the road and the place names.
+  function placeCompass() {
+    const c = $('.compass', layer('terrain'));
+    if (!c) return;
+    const mids = NODES.filter((n) => n.next != null).map((n) => [(n.x + NODES[n.next].x) / 2, (n.y + NODES[n.next].y) / 2]);
+    const pts = NODES.map((n) => [n.x, n.y]).concat(mids);
+    const labels = [...layer('labels').querySelectorAll('text')].map((t) => { try { return t.getBBox(); } catch (e) { return { x: 0, y: 0, width: 0, height: 0 }; } });
+    const clear = (x, y) => !pts.some((p) => Math.hypot(p[0] - x, p[1] - y) < 62) &&
+      !labels.some((b) => x + 40 > b.x && x - 40 < b.x + b.width && y + 40 > b.y && y - 50 < b.y + b.height);
+    let best = null, bd = Infinity;
+    for (let x = 440; x <= 1000; x += 12) for (let y = 560; y <= 860; y += 12) {
+      const d = Math.hypot(x - 612, y - 800);
+      if (d < bd && clear(x, y)) { bd = d; best = [x, y]; }
+    }
+    if (!best) return;
+    c.setAttribute('transform', 'translate(' + best[0] + ',' + best[1] + ')');
+    // trees, rocks and animals that would stand on the compass are cleared away
+    for (const el of [...layer('scenery').children]) {
+      let bb; try { bb = el.getBBox(); } catch (e) { continue; }
+      const m = el.transform && el.transform.baseVal.consolidate();
+      const ex = (m ? m.matrix.e : 0) + bb.x + bb.width / 2, ey = (m ? m.matrix.f : 0) + bb.y + bb.height / 2;
+      if (bb.width < 160 && bb.height < 160 && Math.hypot(ex - best[0], ey - best[1]) < 46) el.remove();
+    }
+  }
+
   function renderBoard() {
     look = BOARD.dress(geo);
     layer('terrain').innerHTML = BOARD.terrainHTML(geo.map) + BOARD.cartoucheHTML(MAP_NAMES[geo.map]);
@@ -384,9 +416,16 @@
     g.setAttribute('class', 'token');
     g.innerHTML = '<g class="tk-ring"><ellipse rx="19" ry="7" fill="none" stroke="' + p.h.color + '" stroke-width="3"/></g>' +
       '<ellipse class="tk-shadow" cx="0" cy="0" rx="13" ry="4.4"/>' +
-      '<g class="tk-lift"><g class="tk-face"><g transform="scale(1.02)">' + HB.figure(p.h) + '</g></g>' +
+      '<g class="tk-lift"><g class="tk-idle"><g class="tk-face"><g transform="scale(1.02)">' + HB.figure(p.h) + '</g></g>' +
       // the hobbit's initial on the jacket; outside tk-face so it never shows mirrored
-      '<text class="tk-letter" x="0" y="-9.6" text-anchor="middle">' + p.name.charAt(0) + '</text></g>' +
+      '<text class="tk-letter" x="0" y="-9.6" text-anchor="middle">' + p.name.charAt(0) + '</text>' +
+      // a snack for when the hobbit has been waiting a long time
+      '<g class="tk-snack"><circle cx="0" cy="0" r="3.4" fill="#d8402e"/><path d="M0,-3 q1,-3 3,-3" stroke="#4a7a2a" stroke-width="1.2" fill="none"/></g></g></g>' +
+      // moths that circle a hobbit who has rested, until the +1 is used
+      '<g class="tk-moths" display="none"><g transform="translate(0,-44) scale(1,.45)">' +
+      [0, 1, 2].map((i) => '<g class="moth-orbit" style="animation-delay:-' + (i * 0.9) + 's;animation-duration:' + (2.4 + i * 0.5) + 's"><circle r="20" fill="none"/>' +
+        '<g transform="translate(20,0) scale(1,2.2)"><path class="moth" d="M-3,-1 L0,0 L-3,1.6 Z M3,-1 L0,0 L3,1.6 Z" fill="#f4ecd0"/><circle r=".9" fill="#fff6c4"/></g></g>').join('') +
+      '</g></g>' +
       '<g class="tk-badge" transform="translate(13,-50)" display="none"><circle r="10" fill="#f6c453" stroke="#7a4a12" stroke-width="1.6"/>' +
       '<text y="4.2" text-anchor="middle" class="tk-badge-n"></text></g>';
     layer('tokens').appendChild(g);
@@ -394,6 +433,9 @@
     p.liftEl = $('.tk-lift', g);
     p.faceEl = $('.tk-face', g);
     p.shadowEl = $('.tk-shadow', g);
+    p.idleEl = $('.tk-idle', g);
+    p.mothsEl = $('.tk-moths', g);
+    p.lastMoved = performance.now();
     p.x = NODES[p.node].x; p.y = NODES[p.node].y; p.h0 = 0; p.sx = 1; p.sy = 1; p.dir = 1;
     drawToken(p);
   }
@@ -437,6 +479,7 @@
   }
 
   function hop(p, toId, back) {
+    if (p.idleEl) p.idleEl.classList.remove('sit', 'snack');
     const from = [p.x, p.y], to = [NODES[toId].x, NODES[toId].y];
     const dur = speed().hop * (back ? 1.1 : 1);
     if (Math.abs(to[0] - from[0]) > 2) p.dir = to[0] < from[0] ? -1 : 1;
@@ -466,6 +509,8 @@
   }
 
   function landFx(p, back) {
+    p.lastMoved = performance.now();
+    if (p.idleEl) p.idleEl.classList.remove('sit', 'snack');
     Sound.step(back);
     dust(p.x, p.y);
     react(p.x, p.y);
@@ -516,17 +561,43 @@
     reactors.forEach((r) => {
       if (Math.abs(r.x - x) > r.r || Math.abs(r.y - y) > r.r || Math.hypot(r.x - x, r.y - y) > r.r) return;
       const el = r.el;
+      if (el.dataset.rx === 'hop') {
+        if (el.classList.contains('scatter')) return;
+        const dx = r.x - x, dy = r.y - y, d = Math.hypot(dx, dy) || 1;
+        el.style.setProperty('--ax', (dx / d * 18).toFixed(1) + 'px');
+        el.style.setProperty('--ay', (dy / d * 9).toFixed(1) + 'px');
+        el.classList.add('scatter');
+        clearTimeout(el._rxTimer);
+        el._rxTimer = setTimeout(() => el.classList.remove('scatter'), 4200);
+        return;
+      }
       if (el.classList.contains('react')) return;
       el.classList.add('react');
       clearTimeout(el._rxTimer);
       el._rxTimer = setTimeout(() => el.classList.remove('react'), 2400);
     });
   }
+  // Between moves the Eye slowly turns to the hobbit closest to Mount Doom.
+  function eyeOnLeader() {
+    const left = players.filter((p) => !p.place);
+    if (!left.length) return;
+    const lead = left.reduce((a, b) => (geo.dist[b.node] < geo.dist[a.node] ? b : a));
+    const pupil = $('#eye-pupil', elBoard);
+    if (pupil) pupil.classList.add('slow');
+    lookAt(lead.x, lead.y);
+    setTimeout(() => { if (pupil) pupil.classList.remove('slow'); }, 1800);
+  }
   function lookAt(x, y) {
     const pupil = $('#eye-pupil', elBoard);
     if (!pupil) return;
     const dx = x - 1566, dy = y - 442, d = Math.hypot(dx, dy) || 1;
     pupil.style.transform = 'translate(' + (dx / d * 9).toFixed(1) + 'px,' + (dy / d * 2.5).toFixed(1) + 'px)';
+  }
+  function wakeDoors(n) {
+    const doors = reactors.filter((r) => r.el.dataset.rx === 'glow').sort((a, b) => Math.hypot(a.x - n.x, a.y - n.y) - Math.hypot(b.x - n.x, b.y - n.y))[0];
+    if (!doors || Math.hypot(doors.x - n.x, doors.y - n.y) > 150) return;
+    doors.el.classList.remove('awake'); void doors.el.getBoundingClientRect(); doors.el.classList.add('awake');
+    setTimeout(() => doors.el.classList.remove('awake'), 5200);
   }
   function highlightShortcut(id) {
     const roads = layer('road').querySelectorAll('path');
@@ -603,7 +674,7 @@
       const bx = (leftToRight ? -1 : 1) * (i * 16 + Math.random() * 10), by = (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 11 + Math.random() * 6;
       const s = 0.9 + Math.random() * 0.4;
       birds += '<g transform="translate(' + bx.toFixed(1) + ',' + by.toFixed(1) + ') scale(' + s.toFixed(2) + ')">' +
-        '<path class="wing" style="animation-delay:-' + (Math.random() * 0.4).toFixed(2) + 's" d="M-7,0 q3.5,-5 7,0 q3.5,-5 7,0" stroke="#3b2a1c" stroke-width="1.6" fill="none" stroke-linecap="round"/></g>';
+        '<path class="wing" style="animation-delay:-' + (Math.random() * 0.4).toFixed(2) + 's" d="M-7.5,0 C-5.2,-4.4 -2.2,-4 -0.8,-1 L0,0.6 L0.8,-1 C2.2,-4 5.2,-4.4 7.5,0 C4.8,-2 2.2,-1.2 1,1.2 L0,2.2 L-1,1.2 C-2.2,-1.2 -4.8,-2 -7.5,0 Z" fill="#3b2a1c"/></g>';
     }
     const g = document.createElementNS(SVGNS, 'g');
     g.setAttribute('transform', 'translate(' + x0 + ',' + y0.toFixed(0) + ')');
@@ -625,7 +696,7 @@
     for (let b = 0; b < count; b++) {
       const s = 0.9 + Math.random() * 0.4;
       const g = document.createElementNS(SVGNS, 'g');
-      g.innerHTML = '<path class="wing" style="animation-delay:-' + (Math.random() * 0.4).toFixed(2) + 's" d="M-7,0 q3.5,-5 7,0 q3.5,-5 7,0" stroke="#3b2a1c" stroke-width="1.6" fill="none" stroke-linecap="round"/>';
+      g.innerHTML = '<path class="wing" style="animation-delay:-' + (Math.random() * 0.4).toFixed(2) + 's" d="M-7.5,0 C-5.2,-4.4 -2.2,-4 -0.8,-1 L0,0.6 L0.8,-1 C2.2,-4 5.2,-4.4 7.5,0 C4.8,-2 2.2,-1.2 1,1.2 L0,2.2 L-1,1.2 C-2.2,-1.2 -4.8,-2 -7.5,0 Z" fill="#3b2a1c"/>';
       layer('sky').appendChild(g);
       // enter from off the edge of the map, glide along a gently curving path at a steady speed, leave off the edge
       let x = rand(200, 1400), y = -60, h = Math.PI / 2 + rand(-0.6, 0.6);
@@ -653,6 +724,159 @@
       const anim = g.animate(frames, { duration: dur, easing: 'linear' });
       anim.onfinish = () => g.remove();
     }
+  }
+
+  // Crebain from Dunland: a big, fast flock of dark crows sweeping low across the map.
+  function crebain() {
+    if (reduceMotion()) return false;
+    const leftToRight = Math.random() < 0.5;
+    const y0 = 260 + Math.random() * 360, y1 = y0 + (Math.random() - 0.5) * 220;
+    const x0 = leftToRight ? -80 : BOARD.W + 80, x1 = leftToRight ? BOARD.W + 80 : -80;
+    const dur = 6.5 + Math.random() * 1.5;
+    let birds = '';
+    for (let i = 0; i < 16; i++) {
+      const bx = (leftToRight ? -1 : 1) * (Math.random() * 120), by = (Math.random() - 0.5) * 70;
+      birds += '<g transform="translate(' + bx.toFixed(1) + ',' + by.toFixed(1) + ') scale(' + (0.9 + Math.random() * 0.5).toFixed(2) + ')">' +
+        '<path class="wing crow" style="animation-delay:-' + (Math.random() * 0.3).toFixed(2) + 's" d="M-8.5,0.4 C-6,-4.6 -2.6,-4.4 -0.9,-1 L0,0.6 L0.9,-1 C2.6,-4.4 6,-4.6 8.5,0.4 L6.4,-0.6 L5.6,0.8 C4,-1.6 2.2,-1 1.1,1.4 L0,2.6 L-1.1,1.4 C-2.2,-1 -4,-1.6 -5.6,0.8 L-6.4,-0.6 Z" fill="#15131a"/></g>';
+    }
+    const g = document.createElementNS(SVGNS, 'g');
+    g.setAttribute('transform', 'translate(' + x0 + ',' + y0.toFixed(0) + ')');
+    g.innerHTML = '<g class="flyby crebain" style="--fx:' + (x1 - x0) + 'px;--fy:' + (y1 - y0).toFixed(0) + 'px;--dur:' + dur.toFixed(1) + 's">' + birds + '</g>';
+    layer('sky').appendChild(g);
+    setTimeout(() => g.remove(), dur * 1000 + 500);
+    return dur * 1000 + 500;
+  }
+
+  // Tom Bombadil skips through the Old Forest in his yellow boots.
+  function bombadil() {
+    const run = clearRun(260, 120, 720, 300, 620);
+    if (!run) return false;
+    const [x0, y] = run, x1 = x0 + 260;
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    walker('critters', dir > 0 ? x0 : x1, y, (x1 - x0) * dir, 0, 9, dir < 0, SHADOW(10) + bombadilArt(), 'bombadil');
+    return 9300;
+  }
+  // Tom Bombadil: blue jacket, yellow boots, brown beard and a battered hat with a long blue feather
+  function bombadilArt() {
+    const leg = (cls, x, dx) => '<g class="' + cls + '"><path d="M' + x + ',-13 L' + (x + dx) + ',-3" stroke="#6b4a2b" stroke-width="3.2" stroke-linecap="round"/>' +
+      '<path d="M' + (x + dx - 2.4) + ',-5 h4.2 l.2,3 q3,.4 3.2,2 h-7.6 Z" fill="#f1c232" stroke="#9a7a12" stroke-width=".6"/></g>';
+    return '<g class="skip">' + leg('leg-b', 2.5, 1) + leg('leg-a', -2.5, -1) +
+      '<path d="M-8.4,-13 C-9.6,-20 -8.6,-28 -5.4,-32 L5.4,-32 C8.6,-28 9.6,-20 8.4,-13 C3,-11.6 -3,-11.6 -8.4,-13 Z" fill="#2f5fb0" stroke="#1d3c74" stroke-width=".8"/>' +
+      '<path d="M2,-31 C4,-24 5,-18 5.4,-12.4" stroke="#24508f" stroke-width="1.4" fill="none"/>' +
+      '<path d="M-8.6,-17 Q0,-15.4 8.6,-17" stroke="#6b4a2b" stroke-width="1.8" fill="none"/><rect x="-1.4" y="-17.6" width="2.8" height="2.4" rx=".4" fill="#e8b43a"/>' +
+      '<circle cx="-1" cy="-24" r=".6" fill="#e8b43a"/><circle cx="-1.2" cy="-20.4" r=".6" fill="#e8b43a"/>' +
+      '<g class="leg-a"><path d="M-6,-30 Q-12.5,-35 -12,-43" stroke="#2f5fb0" stroke-width="3.2" fill="none" stroke-linecap="round"/><circle cx="-12" cy="-44.4" r="1.6" fill="#ecc29c"/></g>' +
+      '<g class="leg-b"><path d="M6,-30 Q12.5,-35 12,-43" stroke="#2f5fb0" stroke-width="3.2" fill="none" stroke-linecap="round"/><circle cx="12" cy="-44.4" r="1.6" fill="#ecc29c"/></g>' +
+      '<ellipse cx="0" cy="-37" rx="5" ry="5.2" fill="#ecc29c"/>' +
+      '<circle cx="-3" cy="-35.4" r="1.2" fill="#e88a7a" opacity=".6"/><circle cx="3.2" cy="-35.4" r="1.2" fill="#e88a7a" opacity=".6"/>' +
+      '<path d="M-4.8,-36 C-5,-30 -2.4,-26.4 0,-25.6 C2.4,-26.4 5,-30 4.8,-36 C3,-33.4 -3,-33.4 -4.8,-36 Z" fill="#8a5a32"/>' +
+      '<path d="M-2.6,-34.6 Q0,-32.6 2.6,-34.6" stroke="#5a3418" stroke-width=".8" fill="none"/>' +
+      '<circle cx="-1.8" cy="-38.2" r=".6" fill="#1a1208"/><circle cx="1.8" cy="-38.2" r=".6" fill="#1a1208"/>' +
+      '<path d="M-3,-40 Q-1.8,-40.8 -0.8,-40 M0.8,-40 Q1.8,-40.8 3,-40" stroke="#6b4a2b" stroke-width=".6" fill="none"/>' +
+      '<path d="M-8.4,-41.4 C-4,-43.2 4,-43.2 8.4,-41.4 C5,-40.2 -5,-40.2 -8.4,-41.4 Z" fill="#5a3d22"/>' +
+      '<path d="M-5,-42 C-5.4,-47 -3.6,-50.6 0.4,-50.4 C4,-50.2 5.4,-47 5,-42 Z" fill="#6b4a2b"/>' +
+      '<path d="M-5,-43.6 Q0,-42.6 5,-43.6" stroke="#2f5fb0" stroke-width="1.2" fill="none"/>' +
+      '<path d="M3.4,-44 C6,-50 10,-55 16.4,-57.4 C12.4,-53.6 8.6,-50 4.6,-43.4 Z" fill="#3a7ad0"/>' +
+      '<path d="M3.8,-44 C7.6,-50.4 11,-54 16.4,-57.4" stroke="#1d3c74" stroke-width=".4" fill="none"/></g>';
+  }
+
+  // A Nazgûl on a winged beast circles high above Mordor, then flies off.
+  function fellBeast() {
+    if (reduceMotion()) return false;
+    const g = document.createElementNS(SVGNS, 'g');
+    g.innerHTML = fellBeastArt();
+    layer('sky').appendChild(g);
+    const cx = 1440, cy = 560, rx = 110, ry = 44, loops = 1.5, frames = [], N = 48;
+    for (let i = 0; i <= N; i++) {
+      const a = Math.PI + (i / N) * loops * Math.PI * 2;
+      frames.push({ transform: 'translate(' + (cx + Math.cos(a) * rx).toFixed(1) + 'px,' + (cy + Math.sin(a) * ry).toFixed(1) + 'px) scale(' + (Math.sin(a) < 0 ? 0.85 : 1) + ')', opacity: i === 0 ? 0 : 1, offset: (i / N) * 0.8 });
+    }
+    frames.push({ transform: 'translate(1700px,120px) scale(.6)', opacity: 0, offset: 1 });
+    const anim = g.animate(frames, { duration: 13000, easing: 'linear' });
+    anim.onfinish = () => g.remove();
+    return 13300;
+  }
+  // A Nazgûl riding a fell beast: ragged bat-like wings, a long snaky neck and tail, the rider on its back
+  function fellBeastArt() {
+    const wing = '<path d="M-3,-2 C-12,-14 -30,-22 -60,-15 L-53,-9.5 C-56,-7 -57,-4 -56,-1 C-50,-3.6 -45,-3 -40,1 C-43,4 -43,7 -42,9.4 C-36,5 -29,4.4 -22,6 C-23,8 -22.6,10.6 -21,12 C-15,8 -9,6.6 -3,6 Z" fill="#141016"/>' +
+      '<path d="M-3,-1 L-58,-14.4 M-28,-17.4 L-40,0.6 M-20,-12 L-22,5.6 M-40,-17.2 L-55,-1.4" stroke="#3e3446" stroke-width=".9" fill="none" stroke-linecap="round"/>';
+    return '<g class="fell-beast" stroke="#8a7a92" stroke-width="1.2" stroke-opacity=".7">' +
+      '<g class="fb-wings"><g stroke="#8a7a92">' + wing + '</g><g transform="scale(-1,1)">' + wing + '</g></g>' +
+      '<path d="M-1.4,7 C-4,16 2,20 -1,27 C-3,31 1,35 3,37 L1.4,33 C4,30 5,24 2.4,19 C1,15 2.6,10 2,6 Z" fill="#141016"/>' +
+      '<path d="M3,37 L5,40 L1,39 Z" fill="#141016"/>' +
+      '<ellipse cx="0" cy="2" rx="4.6" ry="7.6" fill="#141016"/>' +
+      '<path d="M-1.8,-4 C-3,-10 -1,-15 1,-19 L3.2,-18 C1.6,-14 1.8,-9 2,-4 Z" fill="#141016"/>' +
+      '<path d="M-0.6,-18 C-1.4,-21 0,-25 2.4,-26.4 L3.2,-22.6 L5.2,-21.6 C4,-19.4 2.6,-18 1.2,-17 Z" fill="#141016"/>' +
+      '<path d="M1,-24.4 L-1.4,-27 M2.6,-25.4 L2,-28.8" stroke="#141016" stroke-width=".8"/>' +
+      '<circle cx="2.6" cy="-23" r=".55" fill="#c84020" stroke="none"/>' +
+      '<path d="M-2.6,-3 L2.6,-3 L2,4 L-2,4 Z" fill="#1d1820"/><circle cx="0" cy="-4.6" r="2.2" fill="#1d1820"/>' +
+      '<path d="M0,-6.8 L.4,-9.4 L1,-6.6 Z" fill="#b9c2c6" stroke="none"/></g>';
+  }
+
+  // Shadowfax, the white horse, gallops across open ground.
+  function shadowfax() {
+    const run = clearRun(380, 300, 1250, 240, 700);
+    if (!run) return false;
+    const [x0, y] = run, x1 = x0 + 380;
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    walker('critters', dir > 0 ? x0 : x1, y, (x1 - x0) * dir, 0, 6, dir < 0, SHADOW(20) + shadowfaxArt(), 'shadowfax');
+    return 6300;
+  }
+  function shadowfaxArt() {
+    return '<g class="gallop">' + BOARD.horseArt({ coat: '#f8f8f4', shade: '#d6d8d4', mane: '#e4e8ee', hoof: '#8a8a86', eye: '#2a2a30', line: '#a8aaa6' }) + '</g>';
+  }
+
+  /* ---------- the sky over Mordor and at night ---------- */
+  // Now and then silent lightning flickers behind Barad-dûr.
+  function scheduleLightning(g) {
+    setTimeout(() => {
+      if (g !== gen || !playing) return;
+      if (!reduceMotion() && elLayer.hidden) lightning();
+      scheduleLightning(g);
+    }, 18000 + Math.random() * 26000);
+  }
+  function lightning() {
+    let x = 1500 + (Math.random() - 0.5) * 80, y = 300, d = 'M' + x.toFixed(0) + ',' + y;
+    while (y < 520) { y += 22 + Math.random() * 22; x += (Math.random() - 0.5) * 34; d += ' L' + x.toFixed(0) + ',' + y.toFixed(0); }
+    const g = document.createElementNS(SVGNS, 'g');
+    g.setAttribute('class', 'lightning');
+    g.innerHTML = '<ellipse cx="1500" cy="420" rx="200" ry="150" fill="#d8c8ff" class="l-sky"/><path d="' + d + '" stroke="#f4eeff" stroke-width="2.4" fill="none" stroke-linejoin="round" class="l-bolt"/>';
+    layer('terrain').appendChild(g);   // behind the dark tower
+    setTimeout(() => g.remove(), 1400);
+  }
+  // On evening games, a rare shooting star crosses the sky.
+  function scheduleStars(g) {
+    setTimeout(() => {
+      if (g !== gen || !playing) return;
+      if (!reduceMotion() && elLayer.hidden && look.time.name === 'Evening') shootingStar();
+      scheduleStars(g);
+    }, 22000 + Math.random() * 38000);
+  }
+  function shootingStar() {
+    const x = 200 + Math.random() * 1100, y = 30 + Math.random() * 160, dir = Math.random() < 0.5 ? 1 : -1;
+    const g = document.createElementNS(SVGNS, 'g');
+    g.setAttribute('transform', 'translate(' + x.toFixed(0) + ',' + y.toFixed(0) + ') scale(' + dir + ',1)');
+    g.innerHTML = '<g class="star-streak"><path d="M-70,-26 L0,0" stroke="url(#star-tail)" stroke-width="2.2" stroke-linecap="round"/><circle r="2.4" fill="#fffbe8"/></g>';
+    layer('sky').appendChild(g);
+    setTimeout(() => g.remove(), 1600);
+  }
+
+  // A hobbit who has stood still a long time sits down for a rest, or has a snack.
+  function scheduleIdle(g) {
+    setTimeout(() => {
+      if (g !== gen || !playing) return;
+      if (!reduceMotion()) {
+        const now = performance.now();
+        const bored = players.filter((p) => !p.place && !p.active && p.idleEl && now - p.lastMoved > 20000 && !p.idleEl.classList.contains('sit') && !p.idleEl.classList.contains('snack'));
+        if (bored.length && Math.random() < 0.6) {
+          const p = bored[Math.floor(Math.random() * bored.length)];
+          const kind = Math.random() < 0.5 ? 'sit' : 'snack';
+          p.idleEl.classList.add(kind);
+          setTimeout(() => p.idleEl.classList.remove(kind), 5000);
+        }
+      }
+      scheduleIdle(g);
+    }, 6000 + Math.random() * 5000);
   }
 
   /* ---------- Gollum peeks out ---------- */
@@ -725,7 +949,7 @@
         '<text x="' + (flip ? -57 : 57) + '" y="-46.5" text-anchor="middle" class="g-say">' + say + '</text></g>' : '');
     layer('critters').appendChild(g);
     setTimeout(() => Sound.gollum(), 500);
-    setTimeout(() => g.remove(), 4600);
+    setTimeout(() => g.remove(), 7200);
     return true;
   }
 
@@ -734,11 +958,15 @@
   let turnsSinceVisitor = 0;
   let visitorBusyUntil = 0;
   const VISITORS = [
-    { id: 'gollum', weight: 3, run: () => peekGollum() && 4600 },
+    { id: 'gollum', weight: 3, run: () => peekGollum() && 7200 },
     { id: 'gandalf', weight: 2, run: () => gandalfCart() },
     { id: 'eagle', weight: 2, run: () => eagleFly(960, -70, 1230, 150, 1700, 330, 9, 1) && 9500 },
-    { id: 'rider', weight: 2, run: () => blackRider() },
-    { id: 'ent', weight: 2, run: () => entWalk() }
+    { id: 'rider', weight: 2, run: () => { const y = clearLane(800, 616, 392, 110, 860); return y != null && blackRider(800, 616, y); } },
+    { id: 'ent', weight: 2, run: () => entWalk() },
+    { id: 'crebain', weight: 2, run: () => crebain() },
+    { id: 'bombadil', weight: 1, run: () => bombadil() },
+    { id: 'nazgul', weight: 1, run: () => fellBeast() },
+    { id: 'shadowfax', weight: 1, run: () => shadowfax() }
   ];
   function maybeVisitor() {
     turnsSinceVisitor++;
@@ -766,34 +994,65 @@
     return g;
   }
 
+  // Visitors walk straight across the map. Find the height nearest y0 (within the given range) where the
+  // way from x0 to x1 stays clear of every road space. Returns null if there is no clear way.
+  function clearLane(x0, x1, y0, yMin, yMax) {
+    const lo = Math.min(x0, x1) - 30, hi = Math.max(x0, x1) + 30;
+    const ok = (y) => !NODES.some((n) => n.x > lo && n.x < hi && n.y > y - 70 && n.y < y + 24);
+    for (let d = 0; d <= Math.max(y0 - yMin, yMax - y0); d += 6) {
+      if (y0 - d >= yMin && ok(y0 - d)) return y0 - d;
+      if (y0 + d <= yMax && ok(y0 + d)) return y0 + d;
+    }
+    return null;
+  }
+
+  // Somewhere inside a box where a straight run of the given length stays clear of the road. Picks one at random.
+  function clearRun(len, x0, x1, yMin, yMax) {
+    const ok = (a, y) => !NODES.some((n) => n.x > a - 30 && n.x < a + len + 30 && n.y > y - 70 && n.y < y + 24);
+    const found = [];
+    for (let a = x0; a + len <= x1; a += 20) for (let y = yMin; y <= yMax; y += 10) if (ok(a, y)) found.push([a, y]);
+    return found.length ? found[Math.floor(Math.random() * found.length)] : null;
+  }
+
   // Gandalf's cart rolls through the Shire, letting off fireworks.
   function gandalfCart() {
-    const x0 = -40, x1 = 250, y = 346, dur = 10;
-    const wheel = (cx) => '<g transform="translate(' + cx + ',-6)"><g class="wheel"><circle r="6" fill="#6b4a2b" stroke="#3a2614" stroke-width="1.2"/>' +
-      '<path d="M-6,0 H6 M0,-6 V6 M-4.2,-4.2 L4.2,4.2 M-4.2,4.2 L4.2,-4.2" stroke="#3a2614" stroke-width="1"/></g></g>';
-    const art = '<ellipse cx="4" cy="1" rx="38" ry="5" fill="rgba(70,45,15,.2)"/>' +
-      // horse
-      '<g class="trot"><path d="M20,0 v-9 M25,0 v-9 M34,0 v-9 M38,0 v-9" stroke="#8a8a86" stroke-width="2.4"/>' +
-      '<ellipse cx="29" cy="-12" rx="11" ry="5.5" fill="#a9a9a4"/><path d="M37,-14 L42,-24 L46,-22 L42,-12 Z" fill="#a9a9a4"/>' +
-      '<path d="M40,-24 l-3,-3" stroke="#6d6d68" stroke-width="2"/><path d="M18,-12 q-4,2 -3,7" stroke="#6d6d68" stroke-width="2" fill="none"/></g>' +
-      // shafts and cart
-      '<path d="M10,-12 L22,-12" stroke="#5a3d22" stroke-width="1.6"/>' +
-      '<rect x="-24" y="-20" width="34" height="13" rx="2" fill="#9a6a3a" stroke="#5a3d22" stroke-width="1.2"/>' +
-      '<path d="M-20,-20 v-6 M-15,-20 v-8 M-10,-20 v-5" stroke="#c8433a" stroke-width="3"/><path d="M-20,-26 v-2 M-15,-28 v-2" stroke="#2f6fc0" stroke-width="3"/>' +
-      wheel(-16) + wheel(4) +
-      // Gandalf: grey robe, white beard, tall pointed hat
-      '<path d="M-3,-20 L-11,-20 L-9,-38 L-3,-38 Z" fill="#8e8e94" stroke="#5f5f66" stroke-width=".8"/>' +
-      '<circle cx="-6" cy="-41" r="3.6" fill="#f0c9a3"/>' +
-      '<path d="M-9,-40 Q-6,-30 -3,-40 Z" fill="#f6f6f2"/>' +
-      '<ellipse cx="-6" cy="-44" rx="7.5" ry="1.8" fill="#77777e"/>' +
-      '<path d="M-10,-44 L-5,-58 Q-3,-62 1,-60 L-2,-44 Z" fill="#8e8e94" stroke="#5f5f66" stroke-width=".8"/>';
-    walker('critters', x0, y, x1 - x0, 6, dur, false, art, 'cart');
+    const x0 = -40, x1 = 250, dur = 10;
+    const y = clearLane(x0, x1, 346, 250, 620);
+    if (y == null) return false;
+    walker('critters', x0, y, x1 - x0, 6, dur, false, cartArt(), 'cart');
     // fireworks along the way
     [0.25, 0.48, 0.72].forEach((t) => setTimeout(() => {
       if (!playing) return;
       firework(x0 + (x1 - x0) * t - 6, y - 70 - Math.random() * 50);
     }, dur * 1000 * t));
     return dur * 1000 + 300;
+  }
+  // Gandalf's cart: a grey pony pulling a little wagon of fireworks, Gandalf at the reins
+  function cartArt() {
+    const wheel = (cx) => '<g transform="translate(' + cx + ',-6)"><g class="wheel"><circle r="6" fill="none" stroke="#3a2614" stroke-width="1.6"/>' +
+      '<path d="M-5.2,0 H5.2 M0,-5.2 V5.2 M-3.7,-3.7 L3.7,3.7 M-3.7,3.7 L3.7,-3.7" stroke="#5a3d22" stroke-width=".9"/><circle r="1.4" fill="#3a2614"/></g></g>';
+    return '<ellipse cx="4" cy="1" rx="38" ry="5" fill="rgba(70,45,15,.2)"/>' +
+      '<g transform="translate(30,0) scale(.62)"><g class="trot">' + BOARD.horseArt({ coat: '#b4b4ae', shade: '#8a8a84', mane: '#e8e8e2', hoof: '#4a4440', line: '#6d6d68' }) +
+      '<path d="M7,-26 C9,-20 9,-16 8,-13" stroke="#4a3018" stroke-width="2" fill="none"/></g></g>' +
+      // shafts and harness
+      '<path d="M8,-12.5 L36,-12" stroke="#5a3d22" stroke-width="1.4" fill="none" stroke-linecap="round"/><circle cx="35.4" cy="-12" r="1.1" fill="#3a2614"/>' +
+      '<path d="M-6,-37 Q14,-34 42,-25" stroke="#3a2614" stroke-width=".5" fill="none"/>' +
+      // the wagon: planks, side rail and a load of rockets
+      '<path d="M-20,-27 v-5 M-16,-27 v-8 M-12,-27 v-6 M-8,-27 v-9" stroke="#c8433a" stroke-width="2.6"/>' +
+      '<path d="M-20,-32 v-1.6 M-16,-35 v-1.6 M-12,-33 v-1.6 M-8,-36 v-1.6" stroke="#2f6fc0" stroke-width="2.6"/>' +
+      '<path d="M-18,-27 v-3 M-14,-27 v-5" stroke="#e8b43a" stroke-width="2.2"/>' +
+      '<path d="M-25,-20 L10,-20 L8.5,-8 L-23.5,-8 Z" fill="#9a6a3a" stroke="#5a3d22" stroke-width="1.1" stroke-linejoin="round"/>' +
+      '<path d="M-24.5,-16 H9.6 M-24,-12 H9" stroke="#7a5230" stroke-width=".8"/>' +
+      '<path d="M-26,-21 H11" stroke="#6b4a2b" stroke-width="2.2" stroke-linecap="round"/>' +
+      wheel(-16) + wheel(3) +
+      // Gandalf on the seat: grey robe, long white beard, tall bent hat
+      '<path d="M-1,-20 L-12,-20 C-12,-28 -10.5,-34 -8.5,-38 L-3.5,-38 C-2,-33 -1,-27 -1,-20 Z" fill="#8e9097" stroke="#4f5058" stroke-width=".7"/>' +
+      '<path d="M-3.5,-35 Q-1,-35 2,-31" stroke="#8e9097" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="2.4" cy="-30.6" r="1.2" fill="#e3bc94"/>' +
+      '<circle cx="-6" cy="-41" r="3.4" fill="#e9c4a0"/>' +
+      '<path d="M-9.2,-41.4 C-9.2,-36 -7.6,-32 -5.6,-29.6 C-4,-32 -2.8,-36 -2.8,-41.4 Q-6,-38.6 -9.2,-41.4 Z" fill="#eeeeea"/>' +
+      '<path d="M-7.6,-42.6 H-6.4 M-5.6,-42.6 H-4.4" stroke="#d8d8d2" stroke-width=".8"/>' +
+      '<ellipse cx="-6" cy="-44.4" rx="7.6" ry="1.7" fill="#6a6c74"/>' +
+      '<path d="M-9.6,-44.6 C-8.6,-51 -6.4,-56 -4.6,-58.6 C-3.4,-60.4 -1.2,-61 0.8,-59.8 C-1.8,-59 -2.4,-55 -2.4,-44.6 Z" fill="#7d7f88" stroke="#4f5058" stroke-width=".6"/>';
   }
 
   // A burst of fireworks, Shire-style.
@@ -816,20 +1075,29 @@
     for (let i = 0; i < (n || 3); i++) setTimeout(() => firework(x + (Math.random() - 0.5) * 90, y - 50 - Math.random() * 50), i * 450);
   }
 
-  // A great eagle glides over. It passes through (mx, my) on its way from (x0, y0) to (x1, y1).
   function eagleArt(k) {
+    // one wing (the left); the right is its mirror. Fingered tip feathers, a lighter band of coverts.
+    const wing = '<path d="M-5,-3 C-15,-12 -33,-14.4 -49,-10.6 L-61,-8.6 L-53.6,-5.8 L-61.4,-3.4 L-53.4,-1.6 L-59,1.8 L-50.6,1.6 L-54,5.6 L-45,3.8 C-35,5.6 -20,7.6 -6,6.2 Z" fill="#4e3420" stroke="#2a1a0e" stroke-width=".9" stroke-linejoin="round"/>' +
+      '<path d="M-5,-3 C-15,-11.6 -31,-13.2 -43.6,-9.6 C-33,-6.4 -19,-2.4 -6,1.4 Z" fill="#7a5532"/>' +
+      '<path d="M-14,-6.6 C-22,-8.6 -30,-9 -38,-8 M-12,-1.6 C-22,-2.8 -32,-2 -42,0" stroke="#3a2614" stroke-width=".6" fill="none"/>';
     return '<g transform="scale(' + k + ')"><ellipse cx="0" cy="44" rx="34" ry="6" fill="rgba(40,25,10,.12)"/>' +
-      '<g class="eagle-wings"><path d="M0,0 C-14,-10 -36,-12 -56,-4 C-40,-4 -30,0 -24,4 C-34,4 -42,8 -48,12 C-30,8 -14,8 0,6 Z" fill="#6b4a2b" stroke="#3a2614" stroke-width="1"/>' +
-      '<path d="M0,0 C14,-10 36,-12 56,-4 C40,-4 30,0 24,4 C34,4 42,8 48,12 C30,8 14,8 0,6 Z" fill="#6b4a2b" stroke="#3a2614" stroke-width="1"/></g>' +
-      '<ellipse cx="0" cy="3" rx="8" ry="11" fill="#7a5532"/>' +
-      '<circle cx="0" cy="-8" r="5.5" fill="#e9dcc0"/><path d="M0,-6 l2.5,4 l-4,-1 Z" fill="#e8b43a"/>' +
-      '<circle cx="-1.8" cy="-9" r=".9" fill="#1a1208"/><circle cx="1.8" cy="-9" r=".9" fill="#1a1208"/>' +
-      '<path d="M-5,13 l-3,7 M5,13 l3,7" stroke="#e8b43a" stroke-width="1.6"/></g>';
+      '<g class="eagle-wings"><g>' + wing + '</g><g transform="scale(-1,1)">' + wing + '</g></g>' +
+      '<path d="M-4.4,8 L-9.6,19.6 Q0,23.4 9.6,19.6 L4.4,8 Z" fill="#3e2818" stroke="#2a1a0e" stroke-width=".7"/>' +
+      '<path d="M-2.4,10 L-4,20.6 M0,10 V21.6 M2.4,10 L4,20.6" stroke="#5a3c24" stroke-width=".5"/>' +
+      '<path d="M0,-6.6 C7,-6.6 9.4,1 7.4,9.4 C5.6,14 -5.6,14 -7.4,9.4 C-9.4,1 -7,-6.6 0,-6.6 Z" fill="#6b4a2b" stroke="#3a2614" stroke-width=".7"/>' +
+      '<path d="M-4.6,0 Q-2,2 0,0.4 Q2,2 4.6,0 M-5,4 Q-2.4,6 0,4.4 Q2.4,6 5,4" stroke="#4e3420" stroke-width=".6" fill="none"/>' +
+      '<g stroke-linecap="round"><path d="M-4,10.6 L-5.2,16.4 M4,10.6 L5.2,16.4" stroke="#8a6a44" stroke-width="2.6"/>' +
+      '<path d="M-5.2,16.4 l-2.2,3.6 M-5.2,16.4 l-.2,4 M-5.2,16.4 l1.8,3.4 M5.2,16.4 l2.2,3.6 M5.2,16.4 l.2,4 M5.2,16.4 l-1.8,3.4" stroke="#e8b43a" stroke-width="1.2"/></g>' +
+      '<path d="M-5.4,-6.4 C-6.2,-12 -3.6,-15 0,-15 C3.6,-15 6.2,-12 5.4,-6.4 C3,-4.2 -3,-4.2 -5.4,-6.4 Z" fill="#f4eee0" stroke="#b8ae98" stroke-width=".5"/>' +
+      '<path d="M-3.6,-11.4 L-1,-10.6 M3.6,-11.4 L1,-10.6" stroke="#3a3028" stroke-width=".9" stroke-linecap="round"/>' +
+      '<circle cx="-2.2" cy="-10" r=".85" fill="#1a1208"/><circle cx="2.2" cy="-10" r=".85" fill="#1a1208"/>' +
+      '<path d="M-1.8,-9 L1.8,-9 L1.4,-6 C1,-4.4 0,-4 -0.4,-5 L-1,-6.4 Z" fill="#e8b43a" stroke="#a87a1c" stroke-width=".4"/></g>';
   }
   function eagleFly(x0, y0, mx, my, x1, y1, dur, k) {
     if (reduceMotion()) return false;
     const g = document.createElementNS(SVGNS, 'g');
     g.setAttribute('transform', 'translate(' + x0 + ',' + y0 + ')');
+    g.setAttribute('class', 'visitor-eagle');
     g.innerHTML = '<g class="eagle-fly" style="--mx:' + (mx - x0) + 'px;--my:' + (my - y0) + 'px;--fx:' + (x1 - x0) + 'px;--fy:' + (y1 - y0) + 'px;--dur:' + dur + 's">' + eagleArt(k || 1) + '</g>';
     layer('sky').appendChild(g);
     setTimeout(() => Sound.eagle(), dur * 300);
@@ -838,31 +1106,26 @@
   }
 
   // A Black Rider gallops across the Lone-lands near Bree.
-function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
-    const horse = '<g class="gallop">' +
-      '<path class="leg-a" d="M9,-12 L11,0" stroke="#0f0b0d" stroke-width="2.8" stroke-linecap="round"/>' +
-      '<path class="leg-b" d="M13,-12 L15,0" stroke="#0f0b0d" stroke-width="2.8" stroke-linecap="round"/>' +
-      '<path class="leg-b" d="M-10,-12 L-12,0" stroke="#0f0b0d" stroke-width="2.8" stroke-linecap="round"/>' +
-      '<path class="leg-a" d="M-6,-12 L-6,0" stroke="#0f0b0d" stroke-width="2.8" stroke-linecap="round"/>' +
-      '<path class="trot" d="M-14,-22 Q-24,-20 -22,-8 Q-20,-14 -14,-14 Z" fill="#0a0708"/>' +
-      '<path d="M-14,-18 Q-14,-26 -4,-26 L10,-26 Q16,-26 16,-19 Q16,-13 8,-13 L-7,-13 Q-14,-13 -14,-18 Z" fill="#17120f"/>' +
-      '<path d="M9,-25 L15,-40 L21,-38 L15,-19 Z" fill="#17120f"/>' +
-      '<path d="M14,-42 Q18,-46 24,-42 L30,-37 Q31,-34 27,-34 L21,-35 L15,-33 Z" fill="#17120f"/>' +
-      '<path d="M11,-41 Q7,-34 10,-26 L12,-30 Q10,-36 14,-42 Z" fill="#050405"/>' +
-      '<circle cx="22" cy="-40" r=".8" fill="#e33"/>' +
-      '<path d="M-2,-26 L5,-22 M2,-26 L0,-14" stroke="#0a0708" stroke-width="2.4" stroke-linecap="round" fill="none"/>' +
-      '<path d="M-5,-27 Q-8,-40 -4,-52 L4,-52 Q7,-40 5,-27 Z" fill="#0c0a0b"/>' +
-      '<path d="M-5,-27 Q-11,-26 -13,-20 M5,-27 Q11,-26 13,-22" stroke="#0c0a0b" stroke-width="2" fill="none" stroke-linecap="round"/>' +
-      '<path d="M3,-46 Q10,-42 12,-37" stroke="#0c0a0b" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
-      '<path d="M12,-37 L19,-63" stroke="#b9c2c6" stroke-width="1"/>' +
-      '<path d="M-5,-50 C-6,-64 -2,-69 1,-68 C5,-67 6,-61 5,-51 Z" fill="#0c0a0b"/>' +
-      '<path d="M-0.5,-58 Q1.5,-56 3,-58" stroke="#d8e6e0" stroke-width=".8" fill="none"/>' +
-      '</g>';
-    const art = SHADOW(22) + horse +
+  function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
+    const art = SHADOW(22) + riderArt() +
       '<g class="rider-mist">' + [0, 1, 2].map((i) => '<circle cx="' + (-24 - i * 9) + '" cy="-4" r="' + (5 + i * 2) + '" fill="#3a3436" opacity=".25"/>').join('') + '</g>';
     walker('critters', x0, y, x1 - x0, dy, dur, x1 < x0, art, 'rider');
     Sound.rider();
     return dur * 1000 + 300;
+  }
+  function riderArt() {
+    return '<g class="gallop">' +
+      BOARD.horseArt({ coat: '#1d1714', shade: '#0d0908', mane: '#050405', hoof: '#000', eye: '#e33', line: '#3a3034' }) +
+      // tattered black cloak streaming back over the horse
+      '<path class="trot" d="M-3,-50 C-7,-42 -10,-34 -16,-27 L-13,-25.5 L-15,-22.5 L-11,-22.8 L-12,-19.5 L-7.5,-21.5 L-6,-19 L-3,-22 C0,-23 3,-24 5,-27 C6,-36 5,-44 3,-51 Z" fill="#0c0a0b" stroke="#2c2628" stroke-width=".5"/>' +
+      '<path d="M1,-31 L4.5,-23.5 L3,-17.5" stroke="#0c0a0b" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<path d="M3,-46 Q9,-42 12,-37.5" stroke="#121012" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+      '<path d="M12,-37.5 Q16,-37 19.5,-38.5" stroke="#3a3436" stroke-width=".5" fill="none"/>' +
+      '<path d="M12.4,-38 L18.6,-62" stroke="#c9d2d6" stroke-width="1.1" stroke-linecap="round"/><path d="M10.6,-39.4 L14.4,-38.4" stroke="#6a6266" stroke-width="1.2"/>' +
+      // the hood, with only darkness inside
+      '<path d="M-4.6,-49 C-6.4,-60 -2.6,-68 0.8,-68.4 C4.6,-68 6.4,-61 5.4,-50 C2,-48.2 -1.6,-48.2 -4.6,-49 Z" fill="#0c0a0b" stroke="#2c2628" stroke-width=".5"/>' +
+      '<path d="M0.6,-62.6 C3,-62.6 4.6,-60 4.4,-56.6 L1.4,-55.4 C0.4,-57.6 0,-60.4 0.6,-62.6 Z" fill="#000"/>' +
+      '<circle cx="2.8" cy="-59.6" r=".45" fill="#d8e6e0" opacity=".8"/></g>';
   }
 
     // An Ent wakes up in Fangorn, takes a few slow steps, then goes still again.
@@ -875,22 +1138,31 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
       spot = [x, y];
     }
     if (!spot) return false;
-    const art = '<ellipse cx="0" cy="1" rx="16" ry="4" fill="rgba(40,30,10,.25)"/>' +
-      '<g class="ent-body">' +
-      '<path d="M-7,0 L-9,-10 M-3,0 L-4,-8 M5,0 L7,-10 M9,0 L8,-6" stroke="#5a3d22" stroke-width="3" stroke-linecap="round"/>' +
-      '<path d="M-9,-8 C-11,-30 -9,-48 0,-56 C9,-48 11,-30 9,-8 Z" fill="#6b4a2b" stroke="#3a2614" stroke-width="1.2"/>' +
-      '<path d="M-4,-12 q2,-14 0,-30 M3,-14 q-2,-12 1,-28" stroke="#4a3220" stroke-width="1" fill="none"/>' +
-      '<path class="ent-arm" d="M-8,-36 C-18,-40 -24,-48 -26,-58 M-22,-50 l-6,-2 M-8,-28 C-16,-26 -20,-20 -22,-14" stroke="#5a3d22" stroke-width="3" fill="none" stroke-linecap="round"/>' +
-      '<path class="ent-arm" d="M8,-36 C18,-42 22,-50 22,-60 M20,-52 l6,-3 M8,-28 C16,-26 20,-20 22,-14" stroke="#5a3d22" stroke-width="3" fill="none" stroke-linecap="round"/>' +
-      '<circle cx="-8" cy="-60" r="9" fill="#4f7a37"/><circle cx="6" cy="-64" r="10" fill="#5a8a40"/><circle cx="0" cy="-54" r="8" fill="#46703a"/>' +
-      '<circle cx="-26" cy="-60" r="5" fill="#5a8a40"/><circle cx="22" cy="-62" r="5" fill="#4f7a37"/>' +
-      '<g class="ent-eyes"><ellipse cx="-3.4" cy="-40" rx="2" ry="2.4" fill="#f3e6a8"/><ellipse cx="3.4" cy="-40" rx="2" ry="2.4" fill="#f3e6a8"/>' +
-      '<circle cx="-3.4" cy="-39.6" r=".9" fill="#2a1a08"/><circle cx="3.4" cy="-39.6" r=".9" fill="#2a1a08"/></g>' +
-      '<path d="M-3,-31 q3,1.5 6,0" stroke="#3a2614" stroke-width="1" fill="none"/></g>';
     const dir = Math.random() < 0.5 ? 1 : -1;
-    walker('critters', spot[0].toFixed(0), spot[1].toFixed(0), dir * 26, 0, 7.5, dir < 0, art, 'ent');
+    walker('critters', spot[0].toFixed(0), spot[1].toFixed(0), dir * 26, 0, 7.5, dir < 0, entArt(), 'ent');
     setTimeout(() => Sound.hoom(), 1500);
     return 7800;
+  }
+  // an Ent: a walking tree with bark skin, root feet, a mossy beard and a leafy crown
+  function entArt() {
+    const leaves = (x, y, r) => '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#4a7434"/><circle cx="' + (x - r * 0.3) + '" cy="' + (y - r * 0.3) + '" r="' + (r * 0.7) + '" fill="#5e8e42"/><circle cx="' + (x - r * 0.45) + '" cy="' + (y - r * 0.5) + '" r="' + (r * 0.35) + '" fill="#76a656"/>';
+    return '<ellipse cx="0" cy="1" rx="16" ry="4" fill="rgba(40,30,10,.25)"/>' +
+      '<g class="ent-body">' +
+      '<path d="M-6,-8 C-8,-4 -10,-1 -13,0 L-4,0 C-4,-3 -3,-6 -2,-8 Z M2,-8 C3,-5 4,-2 4,0 L12,0 C9,-1 7,-4 6,-8 Z" fill="#5a3d22" stroke="#3a2614" stroke-width=".8"/>' +
+      '<path d="M-9,-6 C-11,-26 -10,-44 -4,-58 L4,-58 C10,-44 11,-26 9,-6 C5,-4.4 -5,-4.4 -9,-6 Z" fill="#6b4a2b" stroke="#3a2614" stroke-width="1.1"/>' +
+      '<path d="M3,-57 C8,-44 9,-26 8.4,-7 C6.6,-5.6 4.6,-5.4 3.4,-5.6 C5.4,-24 5.4,-42 3,-57 Z" fill="#5a3d22"/>' +
+      '<path d="M-6,-10 C-5,-18 -7,-24 -5.6,-32 M-2,-8 C-1,-14 -3,-20 -1.6,-26 M5.6,-10 C6.4,-16 5,-22 6.2,-30 M-4.4,-46 C-5.4,-50 -4,-54 -2.6,-56" stroke="#4a3220" stroke-width=".9" fill="none" stroke-linecap="round"/>' +
+      '<ellipse cx="-4" cy="-18" rx="1.4" ry="2" fill="#4a3220"/>' +
+      '<path class="ent-arm" d="M-8,-36 C-18,-40 -24,-48 -26,-58 M-22,-50 l-6,-2 M-8,-28 C-16,-26 -20,-20 -22,-14 M-20,-17 l-4,1 M-22,-14 l-1,4" stroke="#5a3d22" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+      '<path class="ent-arm" d="M8,-36 C18,-42 22,-50 22,-60 M20,-52 l6,-3 M8,-28 C16,-26 20,-20 22,-14 M20,-17 l4,1 M22,-14 l1,4" stroke="#5a3d22" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+      leaves(-8, -60, 9) + leaves(6, -64, 10) + leaves(-1, -70, 7) + leaves(0, -55, 7) + leaves(-26, -60, 5) + leaves(22, -62, 5) +
+      '<path d="M-6,-34 C-7,-26 -4.6,-20 -2.4,-16 L-0.6,-20 L1.4,-15 C3.6,-20 7,-26 6,-34 C3,-32 -3,-32 -6,-34 Z" fill="#7a8a4a" opacity=".92"/>' +
+      '<path d="M-3.4,-31 C-3.6,-26 -2.6,-22 -2,-19 M0.4,-31.6 V-21 M3.4,-31 C3.4,-27 3,-24 2.2,-20" stroke="#5a6a34" stroke-width=".6" fill="none"/>' +
+      '<path d="M-6.2,-43.4 Q-3.4,-45.6 -0.8,-43.4 M0.8,-43.4 Q3.4,-45.6 6.2,-43.4" stroke="#3a2614" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
+      '<g class="ent-eyes"><ellipse cx="-3.4" cy="-40" rx="2" ry="2.4" fill="#f3e6a8"/><ellipse cx="3.4" cy="-40" rx="2" ry="2.4" fill="#f3e6a8"/>' +
+      '<circle cx="-3.4" cy="-39.6" r=".9" fill="#2a1a08"/><circle cx="3.4" cy="-39.6" r=".9" fill="#2a1a08"/></g>' +
+      '<ellipse cx="0" cy="-36" rx="1.5" ry="2.6" fill="#5a3d22" stroke="#3a2614" stroke-width=".5"/>' +
+      '<path d="M-2.6,-32.4 q2.6,1.4 5.2,0" stroke="#3a2614" stroke-width="1" fill="none"/></g>';
   }
 
   /* ---------- passers-by in the open ground above the Hobbit Land title ---------- */
@@ -899,151 +1171,196 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
   const SIGN_Y = 668;   // feet line, just above the title box
   // Passers-by are drawn with their feet on the ground at (0,0). Legs and arms swing (classes leg-a / leg-b).
   const SHADOW = (rx) => '<ellipse cx="2" cy="1" rx="' + rx + '" ry="3.5" fill="rgba(40,30,10,.22)"/>';
-  function elfArt(dx, s) {
+  // an arm or leg that swings from its top: the limb, plus a hand, boot or foot at its end
+  const limb = (cls, d, col, w, end) => '<g class="' + cls + '"><path d="' + d + '" stroke="' + col + '" stroke-width="' + w + '" fill="none" stroke-linecap="round"/>' + (end || '') + '</g>';
+  const hand = (x, y, c) => '<circle cx="' + x + '" cy="' + y + '" r="1.25" fill="' + (c || '#ecc29c') + '"/>';
+  // an elf of Lórien: tall and slim, long hair, grey-green cloak, a bow across the back
+  function elfArt(dx, s, hair) {
+    const h = hair || '#e9cf72', skin = '#f2dcbc';
+    const boot = (x) => '<path d="M' + (x - 1.8) + ',-4 h3.2 l.4,4 h-4.2 Z" fill="#6b5238"/>';
     return '<g transform="translate(' + dx + ',0) scale(' + s + ')"><g class="trot">' +
-      '<path class="leg-a" d="M-2,-14 L-3,0" stroke="#3b4a36" stroke-width="2.2" stroke-linecap="round"/>' +
-      '<path class="leg-b" d="M2,-14 L3,0" stroke="#3b4a36" stroke-width="2.2" stroke-linecap="round"/>' +
-      '<path d="M-6,-44 Q-10,-22 -13,0 Q0,-3 13,0 Q10,-22 6,-44 Z" fill="#cfe0cb" stroke="#6f8a68" stroke-width=".8"/>' +
-      '<path d="M-2,-40 Q-4,-20 -6,-2 L-1,-3 Q-2,-20 0,-40 Z" fill="#8fb08a" opacity=".55"/>' +
-      '<path d="M-4,-44 L4,-44 L3,-30 L-3,-30 Z" fill="#9dbf96"/>' +
-      '<path d="M-4,-31 H4" stroke="#c9a449" stroke-width="1.1"/>' +
-      '<path class="leg-b" d="M-4,-42 Q-8,-37 -7,-31" stroke="#e7d2b0" stroke-width="1.8" fill="none" stroke-linecap="round"/>' +
-      '<path class="leg-a" d="M4,-42 Q8,-37 7,-31" stroke="#e7d2b0" stroke-width="1.8" fill="none" stroke-linecap="round"/>' +
-      '<path d="M-1.2,-48 H1.2 V-45 H-1.2 Z" fill="#e7d2b0"/>' +
-      '<path d="M-3.6,-51 L-8,-54.5 L-3.4,-48.5 Z M3.6,-51 L8,-54.5 L3.4,-48.5 Z" fill="#f2dcbc"/>' +
-      '<ellipse cx="0" cy="-51" rx="3.6" ry="4.2" fill="#f2dcbc"/>' +
-      '<path d="M-4.5,-52 Q-5,-60 0,-58.5 Q5,-60 4.5,-52 Q3,-55.5 0,-55.5 Q-3,-55.5 -4.5,-52 Z" fill="#e9cf72"/>' +
-      '<path d="M-4,-52 Q-6.5,-44 -5,-37 L-2.8,-41 Z M4,-52 Q6.5,-44 5,-37 L2.8,-41 Z" fill="#e9cf72"/>' +
-      '<circle cx="-1.3" cy="-51" r=".45" fill="#1a2a20"/><circle cx="1.3" cy="-51" r=".45" fill="#1a2a20"/>' +
-      '<circle cx="0" cy="-42" r="1" fill="#e8b43a"/></g></g>';
+      '<path d="M-4,-46 C-8,-34 -11,-18 -12.6,-5 C-8.6,-3.6 -5,-3.8 -2,-5 C-3,-18 -2,-34 0,-46 Z" fill="#a9bba2" stroke="#6f8a68" stroke-width=".5"/>' +
+      limb('leg-a', 'M-1.6,-16 L-1.8,-3', '#5a6a4a', 2.2, boot(-1.8)) + limb('leg-b', 'M1.6,-16 L1.8,-3', '#4e5e40', 2.2, boot(1.8)) +
+      '<path d="M-6.4,-48 Q-11,-34 -5,-21" stroke="#8a6a3a" stroke-width="1.1" fill="none"/><path d="M-6.4,-48 L-5,-21" stroke="#efe6cc" stroke-width=".35"/>' +
+      '<path d="M-4.6,-44.6 C-6,-36 -6.4,-24 -6.6,-14 L6.6,-14 C6.4,-24 6,-36 4.6,-44.6 Q0,-46 -4.6,-44.6 Z" fill="#9dbf96" stroke="#6f8a68" stroke-width=".6"/>' +
+      '<path d="M2.4,-44 C3.6,-34 4,-24 4,-14.4 L6.6,-14 C6.4,-24 6,-36 4.6,-44.6 Z" fill="#86a880"/>' +
+      '<path d="M0,-25 V-14.2" stroke="#6f8a68" stroke-width=".5"/><path d="M-6,-27.4 H6" stroke="#8a6a3a" stroke-width="1.3"/>' +
+      limb('leg-b', 'M-4,-43 Q-7.4,-36 -6.6,-29.6', '#9dbf96', 2, hand(-6.6, -28.8, skin)) +
+      limb('leg-a', 'M4,-43 Q7.4,-36 6.6,-29.6', '#9dbf96', 2, hand(6.6, -28.8, skin)) +
+      '<path d="M-1.2,-48.4 H1.2 V-45 H-1.2 Z" fill="' + skin + '"/>' +
+      '<path d="M-3.4,-51.4 L-8.4,-55 L-3.2,-49 Z M3.4,-51.4 L8.4,-55 L3.2,-49 Z" fill="' + skin + '" stroke="#c8a888" stroke-width=".3"/>' +
+      '<path d="M-4.2,-53 C-6.6,-46 -6.2,-40 -4.8,-36.4 L-3,-41 L-3.2,-49 Z M4.2,-53 C6.6,-46 6.2,-40 4.8,-36.4 L3,-41 L3.2,-49 Z" fill="' + h + '"/>' +
+      '<ellipse cx="0" cy="-51" rx="3.6" ry="4.3" fill="' + skin + '"/>' +
+      '<path d="M-4.4,-51.6 C-4.8,-57.6 -2,-59.2 0,-59.2 C2,-59.2 4.8,-57.6 4.4,-51.6 C3.6,-54.4 1.6,-55.2 0,-55 C-1.6,-55.2 -3.6,-54.4 -4.4,-51.6 Z" fill="' + h + '"/>' +
+      '<path d="M-4.2,-54.2 Q0,-55.8 4.2,-54.2" stroke="#f0dc8c" stroke-width=".55" fill="none"/>' +
+      '<path d="M-2.2,-52.4 H-0.6 M0.6,-52.4 H2.2" stroke="#8a6a3a" stroke-width=".4"/>' +
+      '<circle cx="-1.4" cy="-51.2" r=".5" fill="#1a3a30"/><circle cx="1.4" cy="-51.2" r=".5" fill="#1a3a30"/>' +
+      '<path d="M-0.9,-48.6 Q0,-48.1 0.9,-48.6" stroke="#b07a6a" stroke-width=".4" fill="none"/>' +
+      '<path d="M0,-45.6 C-1.6,-44.6 -1.6,-43 0,-42.4 C1.6,-43 1.6,-44.6 0,-45.6 Z" fill="#7fae5a" stroke="#c9a449" stroke-width=".4"/></g></g>';
   }
   function elfPair() {
-    return SHADOW(16) + elfArt(0, 1) + elfArt(-14, 0.95);
+    return SHADOW(16) + elfArt(0, 1) + elfArt(-14, 0.95, '#d6cfbe');
   }
-  function orcArt(dx, s) {
+  // an orc: hunched, grey-green, in rough leather and scraps of iron, with a jagged spear
+  function orcArt(dx, s, helm) {
+    const skin = '#6e7d4a', foot = (x) => '<path d="M' + (x - 2.6) + ',-3 h4.4 l.6,3 h-5.4 Z" fill="#2a221a"/>';
     return '<g transform="translate(' + dx + ',0) scale(' + s + ')"><g class="trot">' +
-      '<path class="leg-a" d="M-3,-12 L-4,0" stroke="#3d2f22" stroke-width="3.2" stroke-linecap="round"/>' +
-      '<path class="leg-b" d="M3,-12 L4,0" stroke="#3d2f22" stroke-width="3.2" stroke-linecap="round"/>' +
-      '<path d="M-7,-12 Q-9,-26 -4,-30 L5,-30 Q9,-26 7,-12 Z" fill="#4f5c35" stroke="#2c3520" stroke-width=".8"/>' +
-      '<path d="M-7,-16 H7" stroke="#2a1d10" stroke-width="2"/><rect x="-1.5" y="-17" width="3" height="3" fill="#b8862b"/>' +
-      '<path class="leg-a" d="M-5,-27 Q-8,-22 -7,-15" stroke="#66744a" stroke-width="3" fill="none" stroke-linecap="round"/>' +
-      '<path class="leg-b" d="M5,-27 Q10,-22 9,-14" stroke="#66744a" stroke-width="3" fill="none" stroke-linecap="round"/>' +
-      '<path d="M9,-14 L15,-46" stroke="#5a3d22" stroke-width="1.3"/><path d="M15,-46 L12.5,-40 L17.5,-40 Z" fill="#a9b2b8" stroke="#5f6870" stroke-width=".5"/>' +
-      '<ellipse cx="2" cy="-35" rx="6" ry="5.4" fill="#6e7d4a" stroke="#2c3520" stroke-width=".7"/>' +
-      '<path d="M-3.5,-36 L-9,-40 L-4,-33 Z" fill="#6e7d4a" stroke="#2c3520" stroke-width=".5"/>' +
-      '<path d="M-1,-38.5 L6,-38" stroke="#2c3520" stroke-width="1"/>' +
-      '<circle cx="0.5" cy="-36.5" r="1" fill="#ffd34d"/><circle cx="4" cy="-36.5" r="1" fill="#ffd34d"/>' +
-      '<path d="M-1,-31 L-2,-27 L0.5,-30.5 Z M4.5,-31 L5.5,-27 L3,-30.5 Z" fill="#f3ecd2"/></g></g>';
+      limb('leg-a', 'M-3,-12 L-3.6,-2.6', '#3d2f22', 3.2, foot(-3.6)) + limb('leg-b', 'M3,-12 L3.6,-2.6', '#33271c', 3.2, foot(3.6)) +
+      limb('leg-a', 'M-4,-28 Q-8.4,-22 -7.4,-15.4', skin, 3, hand(-7.4, -14.6, skin)) +
+      '<path d="M-7.4,-12 C-9,-20 -6.6,-28 -1.6,-31 C3,-32.6 8,-29 8.4,-24 C8.8,-19 8,-15 7,-12 Z" fill="#5a4a32" stroke="#2c2418" stroke-width=".7"/>' +
+      '<path d="M-7.4,-12.4 L-5.6,-9.4 L-3.6,-12 L-1.4,-9.2 L1,-12 L3.2,-9.4 L5.2,-12 L7,-9.6 L7.2,-12.4 Z" fill="#4a3c28"/>' +
+      '<path d="M-7.6,-17 Q0,-15.6 8,-17.4" stroke="#2a1d10" stroke-width="1.8" fill="none"/><rect x="-0.6" y="-18" width="2.6" height="2.4" fill="#8a7a5a"/>' +
+      '<path d="M-1,-26 L4,-26.6 M-1.4,-22 L5,-22.4" stroke="#3e3222" stroke-width=".7"/>' +
+      '<path d="M-4,-31.2 C-1,-34.2 4.2,-33.8 6.8,-30 L4.8,-26.8 C2,-29.4 -1,-29.2 -3.4,-27.4 Z" fill="#6d7278" stroke="#3a3e42" stroke-width=".6"/>' +
+      limb('leg-b', 'M5,-27 Q10,-22 9,-14.6', skin, 3, hand(9, -14, skin)) +
+      '<path d="M7.6,-6 L15,-46" stroke="#5a3d22" stroke-width="1.3"/>' +
+      '<path d="M15,-46.4 L12.2,-39.2 L14.2,-40 L15.2,-37.4 L17.4,-39.8 Z" fill="#9aa2a8" stroke="#4f585e" stroke-width=".5"/>' +
+      '<ellipse cx="2.6" cy="-34.6" rx="5.8" ry="5.2" fill="' + skin + '" stroke="#2c3520" stroke-width=".7"/>' +
+      '<path d="M-2.4,-35.6 L-9.4,-40.6 L-3,-32.6 Z" fill="' + skin + '" stroke="#2c3520" stroke-width=".5"/>' +
+      (helm ? '<path d="M-3.4,-36.4 C-3,-41.4 1,-42.4 3.4,-42.2 C6.6,-42 8.8,-39.6 8.4,-36.4 Q2.6,-38.4 -3.4,-36.4 Z" fill="#4a4e54" stroke="#2a2e32" stroke-width=".5"/>' : '') +
+      '<path d="M-0.6,-38 L7.4,-37.2" stroke="#2c3520" stroke-width="1.4" stroke-linecap="round"/>' +
+      '<circle cx="1.4" cy="-36.2" r="1" fill="#ffd34d"/><circle cx="5" cy="-36" r="1" fill="#ffd34d"/>' +
+      '<circle cx="1.6" cy="-36.2" r=".4" fill="#1a1208"/><circle cx="5.2" cy="-36" r=".4" fill="#1a1208"/>' +
+      '<path d="M0,-31.6 Q3.6,-30.4 7.4,-32" stroke="#2c3520" stroke-width=".7" fill="none"/>' +
+      '<path d="M1,-31.6 L0.6,-29.2 L2,-31.2 Z M5.8,-31.8 L6.6,-29.4 L5,-31.2 Z" fill="#f3ecd2"/></g></g>';
   }
   function orcBand() {
-    return SHADOW(24) + orcArt(-24, 0.95) + orcArt(-8, 1) + orcArt(9, 0.9);
+    return SHADOW(24) + orcArt(-24, 0.95) + orcArt(-8, 1, true) + orcArt(9, 0.9);
   }
-  // a stocky dwarf with a grey beard and a hand-axe
-  function dwarfArt(dx, s) {
+  // a stocky dwarf: iron helm, braided beard, mail under a red tunic, an axe on his shoulder
+  function dwarfArt(dx, s, beard) {
+    const b = beard || '#9a8f80', skin = '#f0c9a3';
     return '<g transform="translate(' + dx + ',0) scale(' + s + ')"><g class="trot">' +
-      '<path class="leg-a" d="M-3,-8 L-4,0" stroke="#3b2a1e" stroke-width="3" stroke-linecap="round"/>' +
-      '<path class="leg-b" d="M3,-8 L4,0" stroke="#3b2a1e" stroke-width="3" stroke-linecap="round"/>' +
-      '<path d="M-6,-8 Q-7,-20 -3,-24 L3,-24 Q7,-20 6,-8 Z" fill="#7a2e1e" stroke="#4a1a10" stroke-width=".8"/>' +
-      '<ellipse cx="0" cy="-30" rx="5" ry="5" fill="#f0c9a3"/>' +
-      '<path d="M-5,-30 Q-6,-18 0,-19 Q6,-18 5,-30 Z" fill="#9a8f80" stroke="#5a5248" stroke-width=".6"/>' +
-      '<path d="M-6,-31 Q0,-38 6,-31 Z" fill="#5a4030"/>' +
-      '<path d="M6,-14 L6,-28" stroke="#6b4a2b" stroke-width="1.2"/><path d="M6,-28 L11,-26 L11,-20 L6,-22 Z" fill="#a9b2b8" stroke="#5f6870" stroke-width=".5"/>' +
+      limb('leg-a', 'M-2.6,-9 L-3,-3.4', '#4a3a2a', 3.2, '<path d="M-5.6,-3.6 h4.8 v3.6 h-6 q0,-2 1.2,-3.6 Z" fill="#3b2a1e"/>') +
+      limb('leg-b', 'M2.6,-9 L3,-3.4', '#4a3a2a', 3.2, '<path d="M0.8,-3.6 h4.8 q1.2,1.6 1.2,3.6 h-6 Z" fill="#3b2a1e"/>') +
+      limb('leg-b', 'M-5.4,-23 Q-8.8,-18 -7.8,-13', '#7a2e1e', 3.4, hand(-7.8, -12.4, skin)) +
+      '<path d="M-7,-8 C-8.4,-14 -7.6,-21 -4.6,-24.6 L4.6,-24.6 C7.6,-21 8.4,-14 7,-8 Z" fill="#7a2e1e" stroke="#4a1a10" stroke-width=".7"/>' +
+      '<path d="M-7.2,-10.6 L7.2,-10.6 L6.6,-7.6 L-6.6,-7.6 Z" fill="#8a8f96" stroke="#5f646a" stroke-width=".4"/>' +
+      '<path d="M-6.4,-9.1 H6.4" stroke="#5f646a" stroke-width=".9" stroke-dasharray=".8 .8"/>' +
+      '<path d="M-7.6,-14.2 Q0,-13 7.6,-14.2" stroke="#3a2614" stroke-width="2.2" fill="none"/><rect x="-1.4" y="-15.4" width="2.8" height="2.4" rx=".3" fill="#d8a838"/>' +
+      '<ellipse cx="0" cy="-29.4" rx="4.8" ry="4.9" fill="' + skin + '"/>' +
+      '<path d="M-5.2,-29 C-6.6,-22 -4.6,-17 -2,-14.6 L-0.5,-17.4 L0.5,-17.4 L2,-14.6 C4.6,-17 6.6,-22 5.2,-29 C3.6,-27 2,-26.6 0,-27.2 C-2,-26.6 -3.6,-27 -5.2,-29 Z" fill="' + b + '" stroke="rgba(0,0,0,.25)" stroke-width=".4"/>' +
+      '<path d="M-2.6,-24 L-2,-16.6 M2.6,-24 L2,-16.6 M0,-26 V-19" stroke="rgba(0,0,0,.22)" stroke-width=".5"/>' +
+      '<circle cx="-2" cy="-15.4" r=".8" fill="#d8a838"/><circle cx="2" cy="-15.4" r=".8" fill="#d8a838"/>' +
+      '<path d="M-3.2,-27 Q0,-28.6 3.2,-27" stroke="rgba(0,0,0,.35)" stroke-width="1" fill="none" stroke-linecap="round"/>' +
+      '<ellipse cx="0.3" cy="-28.6" rx="1.4" ry="1.7" fill="#e0a888"/>' +
+      '<path d="M-3.2,-31.4 L-0.8,-31 M3.2,-31.4 L0.8,-31" stroke="' + b + '" stroke-width="1" stroke-linecap="round"/>' +
+      '<circle cx="-1.8" cy="-30.2" r=".55" fill="#1a1208"/><circle cx="1.8" cy="-30.2" r=".55" fill="#1a1208"/>' +
+      '<path d="M-5.6,-31.4 C-5.6,-36.8 -3,-38.8 0,-38.8 C3,-38.8 5.6,-36.8 5.6,-31.4 Z" fill="#8a8f96"/>' +
+      '<path d="M-6.2,-31.4 H6.2" stroke="#5f646a" stroke-width="1.4" stroke-linecap="round"/>' +
+      '<path d="M-3,-36 Q-1,-37.8 1.4,-37.8" stroke="#c8ccd2" stroke-width=".7" fill="none"/>' +
+      limb('leg-a', 'M5,-23 Q8.4,-19 7.8,-15', '#7a2e1e', 3.4, hand(7.8, -14.4, skin)) +
+      '<path d="M7.2,-11 L9.8,-34" stroke="#6b4a2b" stroke-width="1.3" stroke-linecap="round"/>' +
+      '<path d="M9.4,-33.6 C12.8,-35 14.8,-31.8 14.6,-28.6 C12.8,-29.6 10.8,-29.4 9.8,-28.4 Z" fill="#b4bcc2" stroke="#5f6870" stroke-width=".5"/>' +
       '</g></g>';
   }
   function dwarfPair() {
-    return SHADOW(16) + dwarfArt(0, 1) + dwarfArt(-14, 0.95);
+    return SHADOW(16) + dwarfArt(0, 1, '#8a5a32') + dwarfArt(-14, 0.95);
   }
-  // a pack of wargs, lean and grey, loping along in a line
+  // a pack of wargs: big shaggy wolves with heavy heads and bushy tails
   function wargArt(dx, s) {
+    const fur = '#6d665d', dark = '#4e4841';
+    const fore = (x, col, cls) => '<g class="' + cls + '"><path d="M' + x + ',-14 h3 l-.6,7 l.6,6 h-1.7 l-.9,-6 Z" fill="' + col + '"/><ellipse cx="' + (x + 2.4) + '" cy="-0.7" rx="1.8" ry=".8" fill="' + col + '"/></g>';
+    const hind = (x, col, cls) => '<g class="' + cls + '"><path d="M' + x + ',-15 h5 l-1.2,6 l-1.6,4 l.6,4 h-1.6 l-.8,-4 l.1,-4 Z" fill="' + col + '"/><ellipse cx="' + (x + 2.2) + '" cy="-0.7" rx="1.8" ry=".8" fill="' + col + '"/></g>';
     return '<g transform="translate(' + dx + ',0) scale(' + s + ')"><g class="trot">' +
-      '<path class="leg-a" d="M-8,-10 L-10,0" stroke="#4a4540" stroke-width="2.4" stroke-linecap="round"/>' +
-      '<path class="leg-b" d="M-3,-10 L-4,0" stroke="#4a4540" stroke-width="2.4" stroke-linecap="round"/>' +
-      '<path class="leg-a" d="M5,-10 L6,0" stroke="#4a4540" stroke-width="2.4" stroke-linecap="round"/>' +
-      '<path class="leg-b" d="M10,-10 L11,0" stroke="#4a4540" stroke-width="2.4" stroke-linecap="round"/>' +
-      '<path d="M-12,-17 Q-20,-20 -22,-14" stroke="#6d665d" stroke-width="2" fill="none" stroke-linecap="round"/>' +
-      '<path d="M-12,-14 Q-10,-22 2,-22 L10,-22 Q16,-22 17,-17 Q16,-12 10,-11 L-10,-11 Q-13,-12 -12,-14 Z" fill="#6d665d" stroke="#3a3430" stroke-width=".8"/>' +
-      '<ellipse cx="20" cy="-20" rx="6" ry="4.5" fill="#6d665d" stroke="#3a3430" stroke-width=".7"/>' +
-      '<path d="M17,-23 L16,-28 L20,-24 Z" fill="#4a4540"/>' +
-      '<path d="M24,-19 L29,-18 L24,-17 Z" fill="#3a3430"/>' +
-      '<circle cx="21" cy="-21" r="1" fill="#f0c040"/>' +
+      fore(11, dark, 'leg-b') + hind(-11, dark, 'leg-a') +
+      '<path d="M-11,-17 C-17,-19 -21,-16 -23,-10.6 C-20.4,-12.6 -18,-13 -15.4,-13 C-17,-11.6 -17.6,-9.6 -17.4,-7.6 C-14.6,-10.6 -12.4,-12 -11,-14 Z" fill="' + fur + '" stroke="#3a3430" stroke-width=".5"/>' +
+      fore(8, fur, 'leg-a') + hind(-8, fur, 'leg-b') +
+      '<path d="M-12,-15 C-12,-20 -8,-22 -2,-21 C4,-21 8,-25 13,-25.4 C17,-25.4 18.4,-21 17,-16 C16,-12.4 13,-11 10,-11.6 C6,-13 2,-13.6 -3,-12.6 C-7,-11.6 -12,-11 -12,-15 Z" fill="' + fur + '" stroke="#3a3430" stroke-width=".6"/>' +
+      '<path d="M2,-21.4 L4.6,-25.6 L6.4,-23.6 L8.4,-27 L10.4,-24.8 L12.4,-27.6 L14,-24.4 L11,-21 Z" fill="' + dark + '"/>' +
+      '<path d="M-3,-12.8 C2,-13.6 6,-13 10,-11.8 C6,-14.6 2,-15 -3,-12.8 Z" fill="#8a8378"/>' +
+      '<path d="M15,-24 C17,-28.4 21,-28.4 23,-25.4 L29,-22 C30.2,-21 29.8,-19.2 28.2,-19 L23.2,-18 C20,-17 16,-18 15,-21 Z" fill="' + fur + '" stroke="#3a3430" stroke-width=".6"/>' +
+      '<path d="M16.6,-26.4 L16.6,-31.6 L19.8,-27.4 Z M19.4,-27 L20.6,-31.8 L22.2,-26.4 Z" fill="' + dark + '"/>' +
+      '<path d="M18.6,-24.6 L22.4,-23.6" stroke="#2a2620" stroke-width=".7"/><circle cx="21" cy="-23.2" r=".9" fill="#f0c040"/>' +
+      '<circle cx="29" cy="-21.2" r=".9" fill="#1a1612"/>' +
+      '<path d="M23,-19.4 L28.4,-19.6" stroke="#2a1612" stroke-width=".7"/><path d="M24.4,-19.4 l.4,1 l.4,-1 M26.4,-19.5 l.4,1 l.4,-1" stroke="#f3ecd2" stroke-width=".4" fill="none"/>' +
       '</g></g>';
   }
   function wargPack() {
     return SHADOW(20) + wargArt(-22, 0.95) + wargArt(0, 1) + wargArt(20, 0.9);
   }
+  // Gandalf the Grey on foot: long robe, bent pointed hat, long white beard, a glowing staff
   function gandalfOnFoot() {
+    const grey = '#8e9097', skin = '#e9c4a0';
     return SHADOW(12) + '<g class="trot">' +
-      '<path class="leg-a" d="M-3,-3 L-5,0.8 L-0.5,0.8 Z" fill="#3a2a1a"/>' +
-      '<path class="leg-b" d="M3,-3 L5,0.8 L0.5,0.8 Z" fill="#3a2a1a"/>' +
-      '<path d="M-6,-40 Q-10,-20 -12,0 L12,0 Q10,-20 6,-40 Z" fill="#8e9097" stroke="#4f5058" stroke-width=".8"/>' +
-      '<path d="M-3,-30 Q-5,-16 -6,-2 M3,-30 Q5,-16 6,-2" stroke="#5f6068" stroke-width=".6" fill="none"/>' +
-      '<path d="M-6,-37 H6" stroke="#b8862b" stroke-width="1.6"/>' +
-      '<path class="leg-a" d="M-4,-36 Q-7,-30 -6,-24" stroke="#8e9097" stroke-width="3" fill="none" stroke-linecap="round"/>' +
-      '<path class="leg-b" d="M4,-36 Q8,-30 8,-24" stroke="#8e9097" stroke-width="3" fill="none" stroke-linecap="round"/>' +
-      '<path d="M8,-24 L12,-62" stroke="#6b4a2b" stroke-width="1.6" stroke-linecap="round"/>' +
-      '<circle cx="12" cy="-63" r="5" fill="#fff3b0" opacity=".35"/><circle cx="12" cy="-63" r="2.2" fill="#fff3b0" stroke="#e8b43a" stroke-width=".6"/>' +
-      '<rect x="-1.2" y="-42" width="2.4" height="3" fill="#f0c9a3"/>' +
-      '<circle cx="0" cy="-46" r="4.2" fill="#f0c9a3"/>' +
-      '<path d="M-3,-45.5 Q0,-35 3,-45.5 Z" fill="#f6f6f2"/>' +
-      '<path d="M-2.4,-48.5 H-0.6 M0.6,-48.5 H2.4" stroke="#c9c9c2" stroke-width=".6"/>' +
-      '<ellipse cx="0" cy="-51" rx="7" ry="1.6" fill="#6a6c74"/>' +
-      '<path d="M-5,-51 Q-3,-62 2,-70 Q4,-62 5,-51 Z" fill="#7d7f88" stroke="#4f5058" stroke-width=".6"/>' +
-      '<path d="M-5,-53 Q0,-52 5,-53" stroke="#4f5058" stroke-width=".6" fill="none"/></g>';
+      '<path class="leg-a" d="M-3.4,-3 L-5.6,0.8 L-0.6,0.8 Z" fill="#3a2a1a"/>' +
+      '<path class="leg-b" d="M3,-3 L5.4,0.8 L0.6,0.8 Z" fill="#3a2a1a"/>' +
+      limb('leg-a', 'M-4,-38 Q-8,-31 -7,-25', '#7d7f88', 3.4, hand(-7, -24.2, skin)) +
+      '<path d="M-5,-41 C-7,-30 -10,-14 -12,0 L11.4,0 C9.4,-14 7.4,-30 5,-41 Z" fill="' + grey + '" stroke="#4f5058" stroke-width=".7"/>' +
+      '<path d="M2,-38 C4,-26 7,-12 9,0 L11.4,0 C9.4,-14 7.4,-30 5,-41 Z" fill="#787a82"/>' +
+      '<path d="M-2.6,-30 Q-4.6,-16 -6,-1 M0.6,-28 Q1.4,-14 2,-1" stroke="#686a72" stroke-width=".6" fill="none"/>' +
+      '<path d="M-6.4,-42 Q0,-44.6 6.4,-42 L7,-34.6 Q0,-32 -7,-34.6 Z" fill="#7d7f88" stroke="#4f5058" stroke-width=".5"/>' +
+      '<path d="M8.6,-23 L12.4,-63" stroke="#6b4a2b" stroke-width="1.7" stroke-linecap="round"/>' +
+      '<path d="M12.4,-63 C10.6,-65 11.6,-67.4 13.6,-67 C15.4,-66.4 14.6,-64 13,-64" stroke="#6b4a2b" stroke-width="1.2" fill="none"/>' +
+      '<circle cx="12.6" cy="-64.6" r="5" fill="#fff3b0" opacity=".3"/><circle cx="12.6" cy="-64.6" r="1.8" fill="#fff8d0"/>' +
+      '<path d="M4,-39 Q8.2,-33 8.6,-27" stroke="#7d7f88" stroke-width="3.4" fill="none" stroke-linecap="round"/>' + hand(8.6, -26, skin) +
+      '<rect x="-1.2" y="-43" width="2.4" height="3" fill="' + skin + '"/>' +
+      '<path d="M-4,-47 C-5,-42 -4.6,-38 -4,-36 L-3,-44 Z M4,-47 C5,-42 4.6,-38 4,-36 L3,-44 Z" fill="#c9c9c2"/>' +
+      '<circle cx="0" cy="-46.4" r="4" fill="' + skin + '"/>' +
+      '<path d="M-3.8,-45.6 C-4,-40 -2.2,-35 0.4,-31.6 C2.4,-35 4,-40 3.8,-45.6 Q0,-42.6 -3.8,-45.6 Z" fill="#eeeeea" stroke="#c9c9c2" stroke-width=".4"/>' +
+      '<path d="M-2.8,-44.4 Q0,-45.8 2.8,-44.4" stroke="#dcdcd6" stroke-width="1" fill="none" stroke-linecap="round"/>' +
+      '<path d="M-2.8,-48.4 L-0.6,-47.8 M2.8,-48.4 L0.6,-47.8" stroke="#dcdcd6" stroke-width=".9" stroke-linecap="round"/>' +
+      '<circle cx="-1.4" cy="-47.2" r=".5" fill="#1a1208"/><circle cx="1.4" cy="-47.2" r=".5" fill="#1a1208"/>' +
+      '<ellipse cx="0" cy="-50.6" rx="7.6" ry="1.7" fill="#6a6c74"/>' +
+      '<path d="M-4.8,-51 C-3.8,-58 -1.6,-64 0.6,-67 C2,-69 4.6,-70.4 7,-69 C4.4,-68.2 3.4,-63 4.8,-51 Z" fill="#7d7f88" stroke="#4f5058" stroke-width=".6"/>' +
+      '<path d="M-4.6,-52.6 Q0,-51.6 4.7,-52.6" stroke="#5a5c64" stroke-width=".7" fill="none"/></g>';
   }
+  // a hobbit leading a pony loaded with packs
   function hobbitWithPony() {
-    return SHADOW(26) + '<g class="trot">' +
-      '<g>' +
-      '<path class="leg-b" d="M-10,-12 L-11,0" stroke="#7a5530" stroke-width="2.6" stroke-linecap="round"/>' +
-      '<path class="leg-a" d="M-6,-12 L-5,0" stroke="#7a5530" stroke-width="2.6" stroke-linecap="round"/>' +
-      '<path class="leg-a" d="M9,-12 L10,0" stroke="#7a5530" stroke-width="2.6" stroke-linecap="round"/>' +
-      '<path class="leg-b" d="M13,-12 L14,0" stroke="#7a5530" stroke-width="2.6" stroke-linecap="round"/>' +
-      '<path d="M-14,-22 Q-22,-20 -20,-12 Q-18,-16 -14,-16 Z" fill="#3e2a18"/>' +
-      '<path d="M-14,-18 Q-14,-26 -4,-26 L8,-26 Q16,-26 16,-19 Q16,-12 8,-12 L-6,-12 Q-14,-12 -14,-18 Z" fill="#b08258" stroke="#6a4a2a" stroke-width=".8"/>' +
-      '<rect x="-12" y="-33" width="9" height="7" rx="1" fill="#9a6a3a" stroke="#5a3d22" stroke-width=".6"/>' +
-      '<path d="M10,-24 L16,-36 L21,-34 L15,-18 Z" fill="#b08258"/>' +
-      '<path d="M14,-36 Q11,-30 13,-25 L16,-28 Q15,-32 17,-36 Z" fill="#3e2a18"/>' +
-      '<path d="M16,-38 Q20,-42 25,-38 L27,-34 Q25,-31 21,-32 L17,-30 Z" fill="#b08258" stroke="#6a4a2a" stroke-width=".7"/>' +
-      '<circle cx="21.5" cy="-35" r=".6" fill="#1a1208"/></g>' +
-      '<g transform="translate(-30,0)">' +
-      '<path class="leg-a" d="M-2,-8 L-3,0" stroke="#6b4a2b" stroke-width="2.2" stroke-linecap="round"/>' +
-      '<path class="leg-b" d="M2,-8 L3,0" stroke="#6b4a2b" stroke-width="2.2" stroke-linecap="round"/>' +
-      '<path d="M-4.5,-20 Q-6,-12 -4,-8 L4,-8 Q6,-12 4.5,-20 Z" fill="#4f8a3a" stroke="#2f5a22" stroke-width=".6"/>' +
-      '<path class="leg-b" d="M4,-18 Q8,-14 9,-17" stroke="#4f8a3a" stroke-width="2" fill="none" stroke-linecap="round"/>' +
-      '<circle cx="0" cy="-24" r="4" fill="#f0c9a3"/>' +
-      '<ellipse cx="0" cy="-27.5" rx="6" ry="1.1" fill="#7a4a2a"/><path d="M-3.8,-27.5 Q-3.8,-34 0,-34 Q3.8,-34 3.8,-27.5 Z" fill="#7a4a2a"/>' +
-      '</g></g>';
+    return SHADOW(24) + '<ellipse cx="36" cy="1" rx="7" ry="2.6" fill="rgba(40,30,10,.22)"/>' +
+      '<path d="M22.4,-29 C28,-26 32,-22 33.2,-18" stroke="#8a6a3a" stroke-width=".7" fill="none"/>' +
+      '<g class="trot"><g transform="scale(.82)">' + BOARD.horseArt({ coat: '#a87a4e', shade: '#7d5634', mane: '#3e2a18', hoof: '#2a1d14' }) +
+      '<path d="M21,-43 L28.6,-35.6 M19.6,-39.6 L27,-34" stroke="#3a2614" stroke-width=".8"/>' +
+      '<path d="M-11,-30 h12 v6 h-12 Z" fill="#9a6a3a" stroke="#5a3d22" stroke-width=".7"/>' +
+      '<rect x="-9" y="-34" width="9" height="4" rx="2" fill="#6a7a4a" stroke="#3e4a2a" stroke-width=".5"/>' +
+      '<path d="M-4.6,-24 V-18" stroke="#5a3d22" stroke-width="1"/></g></g>' +
+      hobbitArt(36, 1, '#4f8a3a', true);
   }
-  // a man of Gondor or a Ranger: tall, in a dark green cloak, with a sword at his side
+  // a man of Gondor or a Ranger: tall, in a long cloak, with a sword at his side
   function manArt(dx, s, cloak) {
+    const skin = '#e3bc94';
     return '<g transform="translate(' + dx + ',0) scale(' + s + ')"><g class="trot">' +
-      '<path class="leg-a" d="M-3,-16 L-4,0" stroke="#3a2e22" stroke-width="3" stroke-linecap="round"/>' +
-      '<path class="leg-b" d="M3,-16 L4,0" stroke="#3a2e22" stroke-width="3" stroke-linecap="round"/>' +
-      '<path d="M-7,-46 Q-11,-26 -12,-12 L12,-12 Q11,-26 7,-46 Z" fill="' + cloak + '" stroke="#26301e" stroke-width=".8"/>' +
-      '<path d="M-4,-44 L4,-44 L3,-20 L-3,-20 Z" fill="#6b5a44"/>' +
-      '<path d="M-4,-28 H4" stroke="#3a2614" stroke-width="1.6"/>' +
-      '<path d="M7,-26 L13,-8" stroke="#c9ced2" stroke-width="1.8" stroke-linecap="round"/><path d="M5,-28 L9,-25" stroke="#8a6a2a" stroke-width="1.6"/>' +
-      '<path class="leg-a" d="M-6,-43 Q-11,-36 -10,-29" stroke="' + cloak + '" stroke-width="3.2" fill="none" stroke-linecap="round"/>' +
-      '<path class="leg-b" d="M6,-43 Q11,-36 10,-29" stroke="' + cloak + '" stroke-width="3.2" fill="none" stroke-linecap="round"/>' +
-      '<rect x="-1.4" y="-50" width="2.8" height="4" fill="#e3bc94"/>' +
-      '<ellipse cx="0" cy="-53" rx="4.2" ry="4.8" fill="#e3bc94"/>' +
-      '<path d="M-4.6,-53 Q-5,-60 0,-59.5 Q5,-60 4.6,-53 Q4.5,-47 3.5,-46 L3,-53 Q0,-56 -3,-53 L-3.5,-46 Q-4.5,-47 -4.6,-53 Z" fill="#3a2a1c"/>' +
-      '<circle cx="-1.5" cy="-53" r=".5" fill="#1a1208"/><circle cx="1.5" cy="-53" r=".5" fill="#1a1208"/>' +
+      '<path d="M-6,-48 C-10,-34 -13,-18 -14,-9.6 C-9,-8.4 -4,-8.8 -1,-10 C-2,-22 -2,-36 -1,-48 Z" fill="' + cloak + '" stroke="#26301e" stroke-width=".6"/>' +
+      limb('leg-a', 'M-2.4,-18 L-3,-4', '#4a3a2a', 3.2, '<path d="M-5.6,-6 h4.6 v6 h-5.8 q0,-1.4 1.2,-2 Z" fill="#2a1e14"/>') +
+      limb('leg-b', 'M2.4,-18 L3,-4', '#3e3022', 3.2, '<path d="M0.8,-6 h4.4 v4 q1.4,.6 1.4,2 h-5.8 Z" fill="#2a1e14"/>') +
+      limb('leg-b', 'M-6,-44 Q-10.4,-37 -9.6,-30.6', cloak, 3.2, hand(-9.6, -29.6, skin)) +
+      '<path d="M-5.6,-46 C-7,-38 -7.4,-28 -7,-17 L7,-17 C7.4,-28 7,-38 5.6,-46 Q0,-47.6 -5.6,-46 Z" fill="#6b5a44" stroke="#3a2e22" stroke-width=".6"/>' +
+      '<path d="M2.4,-45.6 C3.6,-36 4,-26 4,-17 L7,-17 C7.4,-28 7,-38 5.6,-46 Z" fill="#5a4a36"/>' +
+      '<path d="M-7,-28 Q0,-26.6 7,-28" stroke="#2a1d10" stroke-width="1.7" fill="none"/><rect x="-1.2" y="-29.2" width="2.4" height="2.2" fill="#a8a088"/>' +
+      '<path d="M5.6,-27 L12.4,-9.6" stroke="#2a1e14" stroke-width="1.9" stroke-linecap="round"/><path d="M3.8,-29.6 L7.8,-26.4" stroke="#a88a3a" stroke-width="1.3"/><circle cx="3.4" cy="-30" r=".9" fill="#a88a3a"/>' +
+      '<path d="M-6.6,-46.6 Q0,-48.8 6.6,-46.6 L7.2,-41.8 Q0,-40.2 -7.2,-41.8 Z" fill="' + cloak + '" stroke="#26301e" stroke-width=".5"/>' +
+      '<circle cx="0" cy="-44" r=".9" fill="#c8ccd2"/>' +
+      limb('leg-a', 'M6,-44 Q10.4,-37 9.6,-30.6', cloak, 3.2, hand(9.6, -29.6, skin)) +
+      '<rect x="-1.4" y="-50" width="2.8" height="4" fill="' + skin + '"/>' +
+      '<ellipse cx="0" cy="-53" rx="4.2" ry="4.8" fill="' + skin + '"/>' +
+      '<path d="M-3.8,-51.4 Q0,-46 3.8,-51.4 Q0,-48.8 -3.8,-51.4 Z" fill="#3a2a1c" opacity=".55"/>' +
+      '<path d="M-4.8,-52.4 C-5.4,-59.6 -1.6,-60.2 0,-60 C1.6,-60.2 5.4,-59.6 4.8,-52.4 C4.8,-49 4.2,-47.4 3.4,-46.4 L3.2,-53 C2,-55.4 -2,-55.4 -3.2,-53 L-3.4,-46.4 C-4.2,-47.4 -4.8,-49 -4.8,-52.4 Z" fill="#3a2a1c"/>' +
+      '<path d="M-2.6,-54.6 L-0.8,-54.2 M2.6,-54.6 L0.8,-54.2" stroke="#2a1c10" stroke-width=".6"/>' +
+      '<circle cx="-1.5" cy="-53.2" r=".5" fill="#1a1208"/><circle cx="1.5" cy="-53.2" r=".5" fill="#1a1208"/>' +
       '</g></g>';
   }
-  // a hobbit on his own: short, curly-haired, barefoot, with a coloured waistcoat
-  function hobbitArt(dx, s, vest) {
+  // a hobbit on his own: short, curly-haired, big bare feet, a coloured waistcoat
+  function hobbitArt(dx, s, vest, leading) {
+    const skin = '#f0c9a3', hair = '#6a4426', shirt = '#f1e6c8';
+    const leg = (cls, x, f) => '<g class="' + cls + '"><path d="M' + x + ',-11 L' + (x + f * 0.4) + ',-6" stroke="#6b4a2b" stroke-width="3" stroke-linecap="round"/>' +
+      '<path d="M' + (x + f * 0.4) + ',-6.4 L' + (x + f * 0.6) + ',-1.4" stroke="' + skin + '" stroke-width="2" stroke-linecap="round"/>' +
+      '<ellipse cx="' + (x + f * 1.6) + '" cy="-0.6" rx="2.9" ry="1.3" fill="#c48c5c"/><path d="M' + (x + f * 0.2) + ',-1.6 q' + f + ',-1 ' + 2 * f + ',0" stroke="#8a5a32" stroke-width=".5" fill="none"/></g>';
     return '<g transform="translate(' + dx + ',0) scale(' + s + ')"><g class="trot">' +
-      '<path class="leg-a" d="M-2.5,-9 L-3,-1" stroke="#7a5a3a" stroke-width="2.6" stroke-linecap="round"/>' +
-      '<path class="leg-b" d="M2.5,-9 L3,-1" stroke="#7a5a3a" stroke-width="2.6" stroke-linecap="round"/>' +
-      '<ellipse cx="-3.5" cy="0" rx="3" ry="1.3" fill="#c48c5c"/><ellipse cx="3.5" cy="0" rx="3" ry="1.3" fill="#c48c5c"/>' +
-      '<path d="M-5.5,-23 Q-7,-14 -5,-9 L5,-9 Q7,-14 5.5,-23 Z" fill="#f1e6c8" stroke="#8a7a5a" stroke-width=".6"/>' +
-      '<path d="M-5,-22 L-1,-22 L-1,-11 L-5,-11 Z M1,-22 L5,-22 L5,-11 L1,-11 Z" fill="' + vest + '"/>' +
-      '<path class="leg-a" d="M-5,-21 Q-9,-17 -8,-12" stroke="#f1e6c8" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
-      '<path class="leg-b" d="M5,-21 Q9,-17 8,-12" stroke="#f1e6c8" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
-      '<circle cx="0" cy="-27.5" r="4.6" fill="#f0c9a3"/>' +
-      '<path d="M-5,-28 Q-6,-34 -2,-33.5 Q0,-35.5 2,-33.5 Q6,-34 5,-28 Q4,-31 2,-31 Q0,-32.5 -2,-31 Q-4,-31 -5,-28 Z" fill="#6a4426"/>' +
-      '<circle cx="-1.5" cy="-27.5" r=".5" fill="#1a1208"/><circle cx="1.5" cy="-27.5" r=".5" fill="#1a1208"/>' +
-      '<path d="M-1.5,-25.3 Q0,-24.2 1.5,-25.3" stroke="#8a4a2a" stroke-width=".6" fill="none"/>' +
+      leg('leg-a', -1.8, -1) + leg('leg-b', 1.8, 1) +
+      limb('leg-b', 'M-4.6,-21.4 Q-7.8,-17 -7.2,-12.6', shirt, 2.4, hand(-7.2, -12, skin)) +
+      '<path d="M-5.4,-22.6 C-6.4,-17 -6,-13 -5,-10 L5,-10 C6,-13 6.4,-17 5.4,-22.6 Q0,-24.4 -5.4,-22.6 Z" fill="' + shirt + '" stroke="#8a7a5a" stroke-width=".5"/>' +
+      '<path d="M-5.2,-12 L5.2,-12 L5.4,-9 L-5.4,-9 Z" fill="#6b4a2b"/>' +
+      '<path d="M-5.4,-22.4 C-6.2,-17 -5.8,-13.6 -5.1,-11.4 L-1,-11.4 L-0.6,-17.4 L-2.4,-22.9 Z M5.4,-22.4 C6.2,-17 5.8,-13.6 5.1,-11.4 L1,-11.4 L0.6,-17.4 L2.4,-22.9 Z" fill="' + vest + '"/>' +
+      '<circle cx="-1.2" cy="-15.6" r=".55" fill="#e8c860"/><circle cx="-1.1" cy="-13" r=".55" fill="#e8c860"/>' +
+      (leading ? '<path d="M4.6,-21.4 Q5.6,-18 -2.8,-17.6" stroke="' + shirt + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>' + hand(-3.2, -17.6, skin)
+        : limb('leg-a', 'M4.6,-21.4 Q7.8,-17 7.2,-12.6', shirt, 2.4, hand(7.2, -12, skin))) +
+      '<path d="M-4.2,-28.6 L-6.6,-31.4 L-4,-26.6 Z M4.2,-28.6 L6.6,-31.4 L4,-26.6 Z" fill="' + skin + '" stroke="#c89a70" stroke-width=".3"/>' +
+      '<circle cx="0" cy="-27.4" r="4.5" fill="' + skin + '"/>' +
+      '<circle cx="-2.8" cy="-26" r="1" fill="#e88a7a" opacity=".5"/><circle cx="2.8" cy="-26" r="1" fill="#e88a7a" opacity=".5"/>' +
+      '<g fill="' + hair + '"><circle cx="-3.4" cy="-30.6" r="2"/><circle cx="-1.2" cy="-32" r="2.1"/><circle cx="1.4" cy="-32" r="2.1"/><circle cx="3.6" cy="-30.4" r="1.9"/>' +
+      '<circle cx="-4.3" cy="-28.6" r="1.3"/><circle cx="4.4" cy="-28.4" r="1.3"/></g>' +
+      '<circle cx="-1.5" cy="-27.6" r=".55" fill="#1a1208"/><circle cx="1.5" cy="-27.6" r=".55" fill="#1a1208"/>' +
+      '<path d="M-1.4,-25 Q0,-23.9 1.4,-25" stroke="#8a4a2a" stroke-width=".6" fill="none" stroke-linecap="round"/>' +
       '</g></g>';
   }
 
@@ -1406,6 +1723,9 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
     scheduleWander(gen);
     scheduleWeather(gen, true);
     scheduleSigns(gen, true);
+    scheduleLightning(gen);
+    scheduleStars(gen);
+    scheduleIdle(gen);
     players = Array.from({ length: settings.players }, (_, i) => {
       const h = HB.byId(settings.hobbits[i]);
       return { seat: i, h, name: h.name, cpu: isCpu(i), node: geo.start, trail: [geo.start], turns: 0, place: 0, active: false, bonus: 0, skip: false };
@@ -1417,6 +1737,7 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
     renderPlayers();
     show('game');
     fitStage();
+    placeCompass();   // after the board is on screen, so the place names can be measured
     elDie.style.transform = 'rotateX(' + dieRot.x + 'deg) rotateY(' + dieRot.y + 'deg)';
     const g = gen;
     const first = players[current];
@@ -1432,7 +1753,7 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
   function beginTurn() {
     if (!playing) return;
     const p = players[current];
-    lookAt(p.x, p.y);
+    eyeOnLeader();
     players.forEach((q) => q.el.classList.toggle('turn', q === p));
     if (p.skip) {
       // Gollum stole this turn
@@ -1497,6 +1818,7 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
   async function afterLanding(p, g, fromDie) {
     const n = NODES[p.node];
     if (n.kind === 'finish') { await finishPlayer(p, g); return; }
+    if (n.stop === 'durin') wakeDoors(n);
     if (n.fork) {
       Sound.shortcut();
       sparkle(n.x, n.y, '#9fe08a', 14);
@@ -1584,6 +1906,8 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
     Sound.finish();
     eruption();
     startParty();
+    // a passing eagle visitor fades away, so the eagle that comes for the hobbit is the only one in the sky
+    layer('sky').querySelectorAll('.visitor-eagle').forEach((e) => { e.classList.add('shoo'); setTimeout(() => e.remove(), 700); });
     sparkle(p.x, p.y, '#ffd34d', 18);
     setBadge(p);
     updatePlayers();
@@ -1644,6 +1968,7 @@ function blackRider(x0 = 800, x1 = 616, y = 392, dur = 7, dy = -4) {
       const badges = (p.bonus && !p.place ? '<span class="pbadge rest" title="+1 on the next roll">🍃 +1</span>' : '') +
         (onFork ? '<span class="pbadge short" title="Next move takes the shortcut">➜ Shortcut</span>' : '') +
         (p.skip && !p.place ? '<span class="pbadge skip" title="Misses the next turn">Skip</span>' : '');
+      if (p.mothsEl) p.mothsEl.setAttribute('display', p.bonus && !p.place && !reduceMotion() ? 'inline' : 'none');
       const bEl = $('.pbadges', el);
       if (bEl.innerHTML !== badges) bEl.innerHTML = badges;
       const done = p.place ? 1 : Math.max(0, Math.min(1, 1 - geo.dist[p.node] / START_DIST));

@@ -62,7 +62,7 @@
         Object.assign(list.find((st) => st.id === 'amonhen'), { label: [-28, 6], anchor: 'end' });
       } else if (length === 'long') {
         // from Emyn Muil the road runs west past Ithilien, loops round through the south-west and comes back to the Dead Marshes
-        Object.assign(list.find((st) => st.id === 'marshes'), { at: [700, 860], n: 20, via: [[1360, 470], [1230, 580], [1080, 640], [930, 690], [780, 745], [620, 780], [500, 805], [420, 860], [480, 898]], label: [0, -34], anchor: 'middle' });
+        Object.assign(list.find((st) => st.id === 'marshes'), { at: [700, 860], n: 20, via: [[1360, 470], [1230, 580], [1080, 640], [930, 690], [780, 745], [620, 780], [500, 805], [420, 856], [480, 884]], label: [0, -34], anchor: 'middle' });
       }
       return list;
     }
@@ -80,7 +80,8 @@
         Object.assign(list.find((st) => st.id === 'amonhen'), { label: [-28, 6], anchor: 'end' });
       } else if (length === 'long') {
         // from Emyn Muil the road runs west past Ithilien, loops round and comes back to the Dead Marshes
-        Object.assign(m, { at: [600, 860], n: 20, via: [[1000, 620], [860, 640], [700, 650], [560, 700], [470, 790], [500, 880], [560, 905]], label: [0, -34], anchor: 'middle' });
+        Object.assign(m, { at: [600, 860], n: 20, via: [[1000, 620], [860, 640], [700, 650], [560, 700], [470, 790], [490, 862], [545, 882]], label: [0, -34], anchor: 'middle' });
+        Object.assign(ith, { at: [800, 760], via: [[690, 882], [785, 852]] });
       }
       return list;
     }
@@ -290,16 +291,42 @@
     return '<path d="M' + (-9 * s) + ',0 L' + (-7 * s) + ',' + (-7 * s) + ' L' + (-1 * s) + ',' + (-11 * s) + ' L' + (6 * s) + ',' + (-8 * s) + ' L' + (9 * s) + ',0 Z" fill="' + c1 + '"/>' +
       '<path d="M' + (-1 * s) + ',' + (-11 * s) + ' L' + (6 * s) + ',' + (-8 * s) + ' L' + (9 * s) + ',0 L' + (1 * s) + ',0 Z" fill="' + c2 + '"/>';
   }
+  // a woolly sheep with a dark face, facing right
   function sheep() {
-    return shadow(7) + '<path d="M-4,0 v-4 M3,0 v-4" stroke="#3a2b20" stroke-width="1.4"/>' +
-      '<ellipse cx="0" cy="-6.5" rx="7" ry="4.6" fill="#fbf8ef" stroke="#cfc6b0" stroke-width=".6"/>' +
-      '<circle cx="-3" cy="-9" r="2.6" fill="#fbf8ef"/><circle cx="2.5" cy="-9.5" r="2.6" fill="#fbf8ef"/>' +
-      '<ellipse cx="7" cy="-8" rx="2.4" ry="2.1" fill="#3a2b20"/>';
+    return shadow(7) + '<path d="M-4.5,0 v-4.5 M-2,0 v-4 M2.5,0 v-4.5 M5,0 v-4" stroke="#2e241c" stroke-width="1.2" stroke-linecap="round"/>' +
+      '<ellipse cx="0" cy="-6.5" rx="7" ry="4.4" fill="#e4dece"/>' +
+      '<circle cx="-4.6" cy="-7" r="2.8" fill="#f8f4ea"/><circle cx="-1.6" cy="-9.2" r="2.9" fill="#fbf8ef"/><circle cx="2" cy="-9" r="2.7" fill="#fbf8ef"/>' +
+      '<circle cx="4.4" cy="-7.4" r="2.4" fill="#f4efe2"/><circle cx="-0.5" cy="-6.2" r="3" fill="#f6f2e6"/>' +
+      '<path d="M5.6,-9.4 C8.6,-10.8 11,-8.4 10.4,-6.4 L9.2,-4.8 C8.2,-4.2 6.6,-5 6,-6.6 Z" fill="#2e241c"/>' +
+      '<path d="M6.4,-9.4 L4.2,-10.6 L6.2,-8.2 Z" fill="#2e241c"/><circle cx="8.4" cy="-8" r=".45" fill="#d8d0b8"/>';
+  }
+  // a horse in profile facing right, feet on the ground at (0,0). Legs swing unless o.still.
+  function horseArt(o) {
+    const c = o.coat, sh = o.shade, mn = o.mane, hf = o.hoof || '#2a1d14';
+    const ln = o.line ? ' stroke="' + o.line + '" stroke-width=".6" stroke-linejoin="round"' : '';
+    const la = o.still ? '' : ' class="leg-a"', lb = o.still ? '' : ' class="leg-b"';
+    const hoof = (x) => '<path d="M' + f1(x) + ',-2 h2.3 l.6,2 h-3.1 Z" fill="' + hf + '"/>';
+    const fore = (x, col, cls) => '<g' + cls + '><path d="M' + x + ',-17 h3.6 l-.6,9 l.4,6 h-1.9 l-.6,-6 Z" fill="' + col + '"' + ln + '/>' + hoof(x + 1.2) + '</g>';
+    const hind = (x, col, cls) => '<g' + cls + '><path d="M' + x + ',-19.5 h5.6 l-1.4,8.5 l-1.7,4.5 l.6,4.5 h-1.8 l-.8,-4.5 l.2,-4.5 Z" fill="' + col + '"' + ln + '/>' + hoof(x + 0.9) + '</g>';
+    return fore(11, sh, lb) + hind(-12, sh, la) + fore(7.5, c, la) + hind(-8.5, c, lb) +
+      '<path' + (o.still ? '' : ' class="trot"') + ' d="M-14,-23 C-20,-23 -23,-18 -23,-9 C-21,-13 -19.5,-15.5 -17.5,-16.5 C-19,-12.5 -18.6,-8.5 -17.6,-6 C-15,-11 -14,-16 -12.5,-19.5 Z" fill="' + mn + '"/>' +
+      '<path d="M-15,-20 C-15,-26 -10,-27.5 -4,-26.5 C2,-25.6 7,-27 11.5,-26.2 C16.5,-25.4 18,-20.5 16,-16.2 C14.4,-12.8 10.5,-12.6 6.5,-13.6 C1.5,-13.2 -4.5,-13 -9,-13.6 C-13,-14.2 -15,-16.6 -15,-20 Z" fill="' + c + '"' + ln + '/>' +
+      '<path d="M-12.5,-15.6 C-6,-13.4 4,-13.6 15.4,-16.6 C14,-13.2 10.4,-12.8 6.5,-13.8 C1.5,-13.4 -4.5,-13.2 -9,-13.8 Z" fill="' + sh + '"/>' +
+      '<path d="M-8,-25.2 C-4.6,-22 -5.4,-17.4 -8.6,-14.4 M10.6,-25.4 C8.4,-21.8 8.6,-17.6 9.6,-14.6" stroke="' + sh + '" stroke-width=".8" fill="none"/>' +
+      '<path d="M7.5,-25 C9.5,-32 13,-38 17,-42.2 L21.2,-40.2 C20.2,-34 19.2,-28 17.4,-20.6 Z" fill="' + c + '"' + ln + '/>' +
+      '<path d="M16.2,-41.4 C18,-45.2 22,-44.8 24,-41.6 L29.6,-36.4 C30.8,-34.8 29.8,-33 27.6,-33 L22.4,-33.8 C19.6,-34.4 17,-36.4 16.2,-41.4 Z" fill="' + c + '"' + ln + '/>' +
+      '<path d="M26.2,-33.6 C28,-33.2 29.4,-33.6 29.8,-35" stroke="' + sh + '" stroke-width=".7" fill="none"/>' +
+      '<path d="M18.4,-43.4 L18.8,-47.6 L21,-43.8 Z" fill="' + c + '"' + ln + '/>' +
+      '<path d="M17.4,-43.6 C13,-39.6 10,-33 7.6,-25.6 L10.2,-25.8 C12,-31.6 14.6,-37 18.8,-41.2 Z M17.6,-43.4 C19.6,-44 21.4,-42.8 21.8,-41.2 C20.4,-41.6 19,-41.8 17.6,-41.6 Z" fill="' + mn + '"/>' +
+      '<circle cx="21.8" cy="-39.8" r=".9" fill="' + (o.eye || '#1a1208') + '"/><circle cx="28.4" cy="-35.2" r=".5" fill="' + sh + '"/>';
+  }
+  function darker(hex, f) {
+    const n = parseInt(hex.slice(1), 16), k = f || 0.72;
+    return '#' + [16, 8, 0].map((s) => Math.round(((n >> s) & 255) * k).toString(16).padStart(2, '0')).join('');
   }
   function horse(c) {
-    return shadow(9) + '<path d="M-6,0 v-6 M-3,0 v-6 M4,0 v-6 M7,0 v-6" stroke="' + c + '" stroke-width="1.6"/>' +
-      '<ellipse cx="0" cy="-8" rx="9" ry="4" fill="' + c + '"/><path d="M7,-9 L11,-16 L14,-15 L11,-8 Z" fill="' + c + '"/>' +
-      '<path d="M-9,-8 q-3,2 -2,6" stroke="#2a1d14" stroke-width="1.5" fill="none"/><path d="M9,-14 l3,-2" stroke="#2a1d14" stroke-width="1.6"/>';
+    // the extra outer group lets the .flip rule mirror the horse without undoing its scale
+    return shadow(9) + '<g><g transform="scale(.42)">' + horseArt({ coat: c, shade: darker(c), mane: darker(c, 0.45), still: true }) + '</g></g>';
   }
   function flowers(cols) {
     let s = '';
@@ -349,20 +376,20 @@
       '<circle cx="0" cy="' + -17 * k + '" r="' + 15 * k + '" fill="#7a5a36"/>' +
       '<g class="door"><circle cx="0" cy="' + -17 * k + '" r="' + 12.5 * k + '" fill="' + doorColor + '" stroke="#2a2a1a" stroke-width="1"/>' +
       '<circle cx="0" cy="' + -17 * k + '" r="' + 2.2 * k + '" fill="#f1c84b"/></g>' +
-      '<circle cx="' + -30 * k + '" cy="' + -20 * k + '" r="' + 6 * k + '" fill="#f6e3a1" stroke="#7a5a36" stroke-width="2"/>' +
-      '<circle cx="' + 30 * k + '" cy="' + -20 * k + '" r="' + 6 * k + '" fill="#f6e3a1" stroke="#7a5a36" stroke-width="2"/>' +
+      '<circle cx="' + -30 * k + '" cy="' + -20 * k + '" r="' + 6 * k + '" fill="#f6e3a1" stroke="#7a5a36" stroke-width="2" class="win"/>' +
+      '<circle cx="' + 30 * k + '" cy="' + -20 * k + '" r="' + 6 * k + '" fill="#f6e3a1" stroke="#7a5a36" stroke-width="2" class="win"/>' +
       '<path d="M' + -40 * k + ',0 h' + 80 * k + '" stroke="#6e8f44" stroke-width="2"/>';
   }
   function chimney(x, y) {
     return '<rect x="' + (x - 3) + '" y="' + (y - 10) + '" width="6" height="10" fill="#8b6b4a" stroke="#5a412a" stroke-width=".8"/>' +
       '<g class="smoke">' + [0, 1, 2].map((i) => '<circle class="puff" style="animation-delay:' + (i * 1.3) + 's" cx="' + x + '" cy="' + (y - 12) + '" r="3.4" fill="#e9e3d6"/>').join('') + '</g>';
   }
-  function house(w, h, wall, roof) {
-    return shadow(w / 2) + '<rect x="' + -w / 2 + '" y="' + -h + '" width="' + w + '" height="' + h + '" fill="' + wall + '" stroke="#5a412a" stroke-width="1"/>' +
+  function house(w, h, wall, roof, smoke) {
+    return (smoke ? chimney(Math.round(w / 4), Math.round(-h - w * 0.18)) : '') + shadow(w / 2) + '<rect x="' + -w / 2 + '" y="' + -h + '" width="' + w + '" height="' + h + '" fill="' + wall + '" stroke="#5a412a" stroke-width="1"/>' +
       '<path d="M' + (-w / 2 - 4) + ',' + -h + ' L0,' + (-h - w * 0.55) + ' L' + (w / 2 + 4) + ',' + -h + ' Z" fill="' + roof + '" stroke="#4a3220" stroke-width="1"/>' +
       '<rect x="-3" y="-9" width="6" height="9" fill="#5a3a22"/>' +
-      '<rect x="' + (-w / 2 + 3) + '" y="' + (-h + 4) + '" width="5" height="5" fill="#f6dd8a" stroke="#5a412a" stroke-width=".6"/>' +
-      '<rect x="' + (w / 2 - 8) + '" y="' + (-h + 4) + '" width="5" height="5" fill="#f6dd8a" stroke="#5a412a" stroke-width=".6"/>';
+      '<rect x="' + (-w / 2 + 3) + '" y="' + (-h + 4) + '" width="5" height="5" fill="#f6dd8a" stroke="#5a412a" stroke-width=".6" class="win"/>' +
+      '<rect x="' + (w / 2 - 8) + '" y="' + (-h + 4) + '" width="5" height="5" fill="#f6dd8a" stroke="#5a412a" stroke-width=".6" class="win"/>';
   }
   function elfHouse(w, h) {
     return shadow(w / 2) + '<path d="M' + -w / 2 + ',0 V' + -h + ' Q0,' + (-h - w * 0.8) + ' ' + w / 2 + ',' + -h + ' V0 Z" fill="#f4efe2" stroke="#9b8f6f" stroke-width="1"/>' +
@@ -456,7 +483,7 @@
       let shrooms = '';
       for (let i = 0; i < 4; i++) shrooms += '<g transform="translate(' + (44 + i * 9) + ',' + (14 + (i % 2) * 6) + ')"><rect x="-1" y="-5" width="2.2" height="5" fill="#f3ead6"/><path d="M-4.5,-4.5 Q0,-10 4.5,-4.5 Z" fill="#c9773b"/></g>';
       land(335, 335, '<g transform="translate(335,322)"><path d="M-44,-6 L42,-12 L46,32 L-40,36 Z" fill="#c9a86a" opacity=".6"/>' + rows + shrooms + '</g>');
-      land(318, 250, wrap(318, 252, 1, '', house(26, 16, '#e9dcc0', '#9a6a3a')));
+      land(318, 250, wrap(318, 252, 1, '', house(26, 16, '#e9dcc0', '#9a6a3a', true)));
       reserve(335, 335, 40); reserve(318, 240, 20);
     })();
     // Old Man Willow in the Old Forest
@@ -472,7 +499,7 @@
     // Buckleberry Ferry raft and Brandy Hall
     land(462, 312, wrap(462, 312, 1, 'rx rx-bob', '<path d="M-20,-2 L20,-6 L22,2 L-18,6 Z" fill="#a8774a" stroke="#5a3d22" stroke-width="1.2"/><path d="M-12,-2 v6 M-2,-3 v6 M8,-4 v6" stroke="#5a3d22" stroke-width="1"/>', rx('bob', 462, 300, 90)));
     // Bree
-    land(548, 214, wrap(548, 214, 1, '', house(30, 20, '#e2cfa6', '#7d4a2a')));
+    land(548, 214, wrap(548, 214, 1, '', house(30, 20, '#e2cfa6', '#7d4a2a', true)));
     land(592, 196, wrap(592, 196, 1, '', house(24, 16, '#d8c49b', '#8a5634')));
     land(520, 190, wrap(530, 186, 1, 'rx rx-sign', '<path d="M0,0 V-26 H14" stroke="#4a3220" stroke-width="2" fill="none"/><g class="swing"><path d="M8,-26 v4 M18,-26 v4" stroke="#4a3220" stroke-width="1"/><rect x="4" y="-22" width="18" height="11" rx="2" fill="#f2e3b9" stroke="#4a3220" stroke-width="1"/><circle cx="13" cy="-16.5" r="3.2" fill="#f7f2e6" stroke="#4a3220" stroke-width=".8"/></g>', rx('sign', 540, 190, 110)));
     reserve(558, 200, 42);
@@ -539,7 +566,7 @@
     if (!SER) {
     // Minas Morgul
     land(1214, 772, wrap(1214, 772, 1, 'rx rx-glow', tower(16, 58, '#8a8f86', '#6f746b', '#7dff9c') +
-      '<ellipse class="glow" cx="0" cy="-60" rx="14" ry="22" fill="#7dff9c" opacity=".25"/>', rx('glow', 1214, 740, 120)));
+      '<ellipse class="glow morgul-glow" cx="0" cy="-60" rx="14" ry="22" fill="#7dff9c" opacity=".25"/>', rx('glow', 1214, 740, 120)));
     reserve(1214, 740, 26);
     // Cirith Ungol tower and Shelob
     land(1296, 648, wrap(1296, 648, 1, '', tower(14, 44, '#6e665e', null, '#ffb25a')));
@@ -553,33 +580,53 @@
     }
     if (SER) {
       // Serpent: the same kinds of places, drawn on their new stops
-      const place = (id, dx, dy, svg) => { if (!geo.stopNode[id]) return; const x = geo.stopNode[id].x + dx, y = geo.stopNode[id].y + dy; land(y, wrap(x, y, 1, '', svg)); };
-      place('maggot', -40, 14, house(26, 16, '#e9dcc0', '#9a6a3a'));
-      place('bree', 46, -8, house(30, 20, '#e2cfa6', '#7d4a2a'));
+      const place = (id, dx, dy, svg, kind) => {
+        if (!geo.stopNode[id]) return;
+        const x = geo.stopNode[id].x + dx, y = geo.stopNode[id].y + dy;
+        land(y, wrap(x, y, 1, kind ? 'rx rx-' + kind : '', svg, kind ? rx(kind, f1(x), f1(y - 20), 120) : ''));
+      };
+      place('maggot', -40, 14, house(26, 16, '#e9dcc0', '#9a6a3a', true));
+      place('bree', 46, -8, house(30, 20, '#e2cfa6', '#7d4a2a', true));
       place('bree', 78, -2, house(24, 16, '#d8c49b', '#8a5634'));
       place('weathertop', 0, 40, '<path d="M-110,0 C-80,-14 -60,-70 -18,-92 C0,-100 18,-100 36,-90 C74,-66 90,-16 110,0 Z" fill="#b9a97c" stroke="#7a6640" stroke-width="1.6"/>');
       place('weathertop', 0, -16, '<rect x="-34" y="-12" width="6" height="14" fill="#a39d8f"/><rect x="-22" y="-18" width="6" height="18" fill="#b0aa9b"/><rect x="34" y="-14" width="6" height="14" fill="#a39d8f"/><rect x="46" y="-8" width="5" height="8" fill="#b0aa9b"/>');
-      place('weathertop', 62, -22, '<path d="M-6,0 L6,0" stroke="#5a3d22" stroke-width="2.4"/><g class="flame"><path d="M-5,-1 Q-6,-9 0,-16 Q6,-9 5,-1 Z" fill="#f08a24"/><path d="M-2.5,-1 Q-3,-6 0,-10 Q3,-6 2.5,-1 Z" fill="#ffd34d"/></g>');
+      place('weathertop', 62, -22, '<path d="M-6,0 L6,0" stroke="#5a3d22" stroke-width="2.4"/><g class="flame"><path d="M-5,-1 Q-6,-9 0,-16 Q6,-9 5,-1 Z" fill="#f08a24"/><path d="M-2.5,-1 Q-3,-6 0,-10 Q3,-6 2.5,-1 Z" fill="#ffd34d"/></g>', 'fire');
       place('rivendell', -34, 4, elfHouse(22, 18));
       place('rivendell', 6, 2, elfHouse(18, 24));
       place('rivendell', -58, -92, '<path d="M-6,0 Q-8,40 -4,92 L6,92 Q8,40 6,0 Z" fill="#9fd0ec"/><path class="flow" d="M0,0 V92" stroke="#e8f6ff" stroke-width="3" stroke-dasharray="6 7" fill="none"/><ellipse cx="0" cy="94" rx="16" ry="5" fill="#b6def2"/>');
       place('durin', 0, -6, '<path d="M-36,0 L-30,-58 L-6,-74 L22,-66 L34,-40 L36,0 Z" fill="#8f8a80" stroke="#5f5a50" stroke-width="1.4"/>');
-      place('durin', 0, -8, '<path d="M-13,0 V-24 Q0,-42 13,-24 V0" fill="#3b3a3f"/><path class="glow" d="M-13,0 V-24 Q0,-42 13,-24 V0 M-9,-26 L9,-26 M0,-34 l-3,6 h6 Z M-10,-6 v-14 M10,-6 v-14" stroke="#cfe7ff" stroke-width="1.4" fill="none"/>');
+      place('durin', 0, -8, '<path d="M-13,0 V-24 Q0,-42 13,-24 V0" fill="#3b3a3f"/><path class="glow" d="M-13,0 V-24 Q0,-42 13,-24 V0 M-9,-26 L9,-26 M0,-34 l-3,6 h6 Z M-10,-6 v-14 M10,-6 v-14" stroke="#cfe7ff" stroke-width="1.4" fill="none"/>', 'glow');
       place('durin', -44, 54, '<ellipse cx="0" cy="0" rx="40" ry="14" fill="#36505e" stroke="#26363f" stroke-width="1.4"/><ellipse cx="-7" cy="-2" rx="28" ry="8" fill="#46687a" opacity=".6"/>');
       place('lorien', 0, -10, '<ellipse cx="0" cy="-20" rx="110" ry="80" fill="#f7d774" opacity=".18"/>');
-      place('lorien', 40, -10, '<g class="glints">' + [[-20, -60], [6, -78], [24, -52], [-4, -40], [14, -66]].map((p) => '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="2.2" fill="#fff6c4"/>').join('') + '</g>');
+      place('lorien', 40, -10, '<g class="glints">' + [[-20, -60], [6, -78], [24, -52], [-4, -40], [14, -66]].map((p) => '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="2.2" fill="#fff6c4"/>').join('') + '</g>', 'sparkle');
       place('amonhen', 0, 8, '<path d="M-46,0 Q-26,-40 0,-44 Q26,-40 46,0 Z" fill="#a6b07a" stroke="#6f7444" stroke-width="1.4"/><rect x="-7" y="-52" width="14" height="10" fill="#bdb6a6" stroke="#6b665c"/><rect x="-9" y="-44" width="18" height="3" fill="#a8a192"/>');
       place('emynmuil', -20, 6, rock('#a7a297', '#857f72', 1.3));
       place('emynmuil', 14, 10, rock('#a7a297', '#857f72', 1));
       place('emynmuil', 34, 2, rock('#a7a297', '#857f72', 0.8));
       place('marshes', -30, 10, '<ellipse cx="0" cy="0" rx="30" ry="9" fill="#6f7f62" stroke="#4f5a44" stroke-width="1"/>');
       place('marshes', 26, -2, '<ellipse cx="0" cy="0" rx="22" ry="7" fill="#6f7f62" stroke="#4f5a44" stroke-width="1"/>');
-      place('marshes', 0, -4, [[-30, -4], [24, -16], [-18, -30], [10, -40]].map((p, i) => '<circle class="marsh-light" style="animation-delay:' + (i * 0.7) + 's" cx="' + p[0] + '" cy="' + p[1] + '" r="3.2" fill="#d6ffb8"/>').join(''));
-      place('ithilien', 0, -12, shadow(20) + '<path d="M-16,0 v-12 M-8,0 v-12 M8,0 v-12 M15,0 v-12" stroke="#8d8579" stroke-width="5"/><ellipse cx="0" cy="-20" rx="21" ry="13" fill="#9a9286"/><circle cx="20" cy="-24" r="9" fill="#9a9286"/><path d="M18,-28 L-6,-36 L-4,-30 Z" fill="#c7313a"/><path d="M27,-22 Q32,-10 26,-2" stroke="#9a9286" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M23,-18 q6,2 10,-2" stroke="#fffbe8" stroke-width="2" fill="none"/><circle cx="21" cy="-27" r="1.3" fill="#2a2420"/>');
-      place('morgul', 0, 0, tower(16, 58, '#8a8f86', '#6f746b', '#7dff9c') + '<ellipse class="glow" cx="0" cy="-60" rx="14" ry="22" fill="#7dff9c" opacity=".25"/>');
+      place('marshes', 0, -4, [[-30, -4], [24, -16], [-18, -30], [10, -40]].map((p, i) => '<circle class="marsh-light" style="animation-delay:' + (i * 0.7) + 's" cx="' + p[0] + '" cy="' + p[1] + '" r="3.2" fill="#d6ffb8"/>').join(''), 'lights');
+      // the oliphaunt stands beside the road at Ithilien, wherever no other road space is in its way
+      const stIth = geo.stopNode.ithilien;
+      const mumakAt = stIth && [[0, -12], [-46, -16], [46, -16], [-40, 34], [40, 34], [0, 44], [0, -56]].find(([dx, dy]) =>
+        !geo.nodes.some((n) => n !== stIth && Math.hypot(n.x - (stIth.x + dx), n.y - (stIth.y + dy - 18)) < 40)) || [0, -12];
+      if (stIth) place('ithilien', mumakAt[0], mumakAt[1], shadow(20) + '<path d="M-16,0 v-12 M-8,0 v-12 M8,0 v-12 M15,0 v-12" stroke="#8d8579" stroke-width="5"/><ellipse cx="0" cy="-20" rx="21" ry="13" fill="#9a9286"/><circle cx="20" cy="-24" r="9" fill="#9a9286"/><path d="M18,-28 L-6,-36 L-4,-30 Z" fill="#c7313a"/><path d="M27,-22 Q32,-10 26,-2" stroke="#9a9286" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M23,-18 q6,2 10,-2" stroke="#fffbe8" stroke-width="2" fill="none"/><circle cx="21" cy="-27" r="1.3" fill="#2a2420"/>');
+      place('morgul', 0, 0, tower(16, 58, '#8a8f86', '#6f746b', '#7dff9c') + '<ellipse class="glow morgul-glow" cx="0" cy="-60" rx="14" ry="22" fill="#7dff9c" opacity=".25"/>', 'glow');
       place('ungol', -8, 0, tower(14, 44, '#6e665e', null, '#ffb25a'));
-      place('ungol', 46, -6, '<g class="spider"><ellipse cx="0" cy="-12" rx="5" ry="6" fill="#2a1e1a"/><path d="M-4,-13 l-7,-5 M-4,-10 l-8,1 M4,-13 l7,-5 M4,-10 l8,1" stroke="#2a1e1a" stroke-width="1.4"/></g>');
+      place('ungol', 46, -6, '<g class="spider"><ellipse cx="0" cy="-12" rx="5" ry="6" fill="#2a1e1a"/><path d="M-4,-13 l-7,-5 M-4,-10 l-8,1 M4,-13 l7,-5 M4,-10 l8,1" stroke="#2a1e1a" stroke-width="1.4"/></g>', 'spider');
     }
+    // Lights drifting among the trees of Lothlórien (brighter in the evening)
+    (function () {
+      const lo = geo.stopNode.lorien;
+      if (!lo) return;
+      let motes = '';
+      for (let i = 0; i < 9; i++) {
+        const x = lo.x + rand(-95, 95), y = lo.y + rand(-120, 10);
+        motes += '<circle class="mote" cx="' + f1(x) + '" cy="' + f1(y) + '" r="' + f1(rand(1.6, 2.6)) + '" fill="#fff3b0" style="--mx:' + f1(rand(-18, 18)) + 'px;--my:' + f1(rand(-22, -8)) +
+          'px;animation-duration:' + f1(rand(5, 9)) + 's;animation-delay:-' + f1(rand(0, 9)) + 's"/>';
+      }
+      land(lo.y + 30, '<g class="lorien-lights">' + motes + '</g>');
+    })();
     // Barad-dûr and the Eye
     land(600, wrap(1566, 604, 1, '', '<path d="M-20,0 L-13,-110 L-6,-118 L-4,-150 L4,-150 L6,-118 L13,-110 L20,0 Z" fill="#2c2420" stroke="#120d0b" stroke-width="1.2"/>' +
       '<path d="M-4,-150 L-12,-170 M4,-150 L12,-170" stroke="#2c2420" stroke-width="4" stroke-linecap="round"/>' +
@@ -766,7 +813,8 @@
     });
     // places the short road skips keep their names on the map
     const ser = geo.map === 'serpent';
-    if (ser) s += '<text class="map-label region" x="740" y="870" text-anchor="middle">Dead Marshes</text>';
+    // (on the long road the way to Ithilien runs along the bottom of the oval, so the name sits a little higher there)
+    if (ser) s += '<text class="map-label region" x="' + (geo.length === 'long' ? 712 : 740) + '" y="' + (geo.length === 'long' ? 842 : 870) + '" text-anchor="middle">Dead Marshes</text>';
     else if (geo.map === 'southern' && !geo.stops.some((st) => st.id === 'marshes')) s += '<text class="map-label region" x="1154" y="612" text-anchor="middle">Dead Marshes</text>';
     else if (!geo.stops.some((st) => st.id === 'marshes')) s += '<text class="map-label region" x="790" y="836" text-anchor="middle">Dead Marshes</text>';
     if (geo.map === 'southern' && !geo.stops.some((st) => st.id === 'emynmuil')) s += '<text class="map-label region" x="1430" y="470" text-anchor="middle">Emyn Muil</text>';
@@ -794,5 +842,5 @@
     }).join('');
   }
 
-  window.HL_BOARD = { W, H, STOPS, SHORTCUTS, MAPS, build, dress, terrainHTML, cartoucheHTML, labelsHTML, roadHTML };
+  window.HL_BOARD = { horseArt, W, H, STOPS, SHORTCUTS, MAPS, build, dress, terrainHTML, cartoucheHTML, labelsHTML, roadHTML };
 })();

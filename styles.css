@@ -282,6 +282,7 @@ h1, h2, p { margin: 0; }
 
 /* the Eye */
 #eye-pupil { transition: transform .5s ease; }
+#eye-pupil.slow { transition-duration: 1.6s; }
 .eye-glow { animation: eye-pulse 3s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes eye-pulse { 50% { opacity: .65; transform: scale(1.25); } }
 .doom-glow { animation: doom-pulse 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
@@ -424,14 +425,15 @@ h1, h2, p { margin: 0; }
 .wing { animation: flap .32s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
 @keyframes flap { to { transform: scaleY(-.55); } }
 /* Gollum peeking from behind a rock */
-.critter { animation: critter-fade 4.4s ease forwards; }
-@keyframes critter-fade { 0% { opacity: 0; } 8%, 88% { opacity: 1; } 100% { opacity: 0; } }
-.gollum-peek { animation: peek 4.4s ease-in-out forwards; }
-@keyframes peek { 0%, 8% { transform: translateY(42px); } 24%, 50% { transform: translateY(0); } 56% { transform: translate(-3px, 1px); } 62%, 72% { transform: translate(3px, 0); } 86%, 100% { transform: translateY(44px); } }
-.g-lid { transform-box: fill-box; transform-origin: 50% 0; animation: blink 4.4s linear forwards; transform: scaleY(0); }
-@keyframes blink { 0%, 38%, 44%, 64%, 70%, 100% { transform: scaleY(0); } 41%, 67% { transform: scaleY(1); } }
-.g-bubble { opacity: 0; animation: g-say 4.4s ease forwards; }
-@keyframes g-say { 0%, 30% { opacity: 0; transform: translateY(4px); } 36%, 76% { opacity: 1; transform: none; } 84%, 100% { opacity: 0; } }
+.critter { animation: critter-fade 7s ease forwards; }
+@keyframes critter-fade { 0% { opacity: 0; } 5%, 92% { opacity: 1; } 100% { opacity: 0; } }
+/* about 7 seconds in all: he rises in the first second, watches for nearly 4, fidgets, then ducks down */
+.gollum-peek { animation: peek 7s ease-in-out forwards; }
+@keyframes peek { 0%, 5% { transform: translateY(42px); } 15%, 69% { transform: translateY(0); } 73% { transform: translate(-3px, 1px); } 77%, 83% { transform: translate(3px, 0); } 91%, 100% { transform: translateY(44px); } }
+.g-lid { transform-box: fill-box; transform-origin: 50% 0; animation: blink 7s linear forwards; transform: scaleY(0); }
+@keyframes blink { 0%, 26%, 31%, 45%, 49%, 64%, 68%, 100% { transform: scaleY(0); } 28.5%, 47%, 66% { transform: scaleY(1); } }
+.g-bubble { opacity: 0; animation: g-say 7s ease forwards; }
+@keyframes g-say { 0%, 19% { opacity: 0; transform: translateY(4px); } 24%, 80% { opacity: 1; transform: none; } 87%, 100% { opacity: 0; } }
 .g-say { font-family: var(--serif); font-style: italic; font-weight: 700; font-size: 12px; fill: #4a4636; }
 .dust { fill: rgba(170, 130, 80, .55); animation: dust .65s ease-out forwards; transform-box: fill-box; transform-origin: center; }
 @keyframes dust { to { opacity: 0; transform: translate(var(--dx), -6px) scale(2.2); } }
@@ -644,3 +646,48 @@ h1, h2, p { margin: 0; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
   .die { transition-duration: .2s; }
 }
+
+/* ---- more life on the map (just for show) ---- */
+/* lit windows on evening games */
+[data-time="evening"] .win { fill: #ffd25a; filter: drop-shadow(0 0 2.5px #ffb43a); animation: win-flicker 3.2s ease-in-out infinite alternate; }
+@keyframes win-flicker { 50% { fill: #ffe08a; } }
+/* Minas Morgul's light pulses */
+.morgul-glow { animation: morgul-pulse 3.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes morgul-pulse { 50% { opacity: .55; transform: scale(1.18); } }
+/* the Doors of Durin wake when a hobbit stops on them */
+.rx-glow.awake .glow { animation: doors-awake 5s ease forwards; transform-box: fill-box; transform-origin: center; }
+@keyframes doors-awake { 0% { opacity: .3; } 15%, 80% { opacity: 1; stroke: #ffffff; filter: drop-shadow(0 0 7px #bfe6ff); } 100% { opacity: .3; } }
+/* lights drifting among the trees of Lothlórien */
+.mote { animation: mote ease-in-out infinite; opacity: 0; }
+@keyframes mote { 0% { opacity: 0; transform: translate(0, 0); } 30%, 70% { opacity: .75; } 100% { opacity: 0; transform: translate(var(--mx), var(--my)); } }
+[data-time="evening"] .mote { filter: drop-shadow(0 0 3px #ffe58a); }
+/* sheep and horses trot a few steps out of the way, then wander back */
+.rx-hop.scatter { animation: scatter 4s ease-in-out; }
+@keyframes scatter { 0% { transform: none; } 6% { transform: translate(calc(var(--ax) * .3), -4px); } 12% { transform: translate(calc(var(--ax) * .6), var(--ay)); } 18% { transform: translate(calc(var(--ax) * .85), calc(var(--ay) - 3px)); } 24%, 60% { transform: translate(var(--ax), var(--ay)); } 100% { transform: none; } }
+/* moths circling a hobbit who has rested */
+.moth-orbit { animation: moth-orbit 2.6s linear infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes moth-orbit { to { transform: rotate(360deg); } }
+.moth { animation: moth-flap .18s linear infinite alternate; transform-box: fill-box; transform-origin: center; }
+@keyframes moth-flap { to { transform: scaleY(.3); } }
+/* a hobbit kept waiting sits down, or has a snack */
+.tk-idle { transform-box: fill-box; transform-origin: 50% 100%; }
+.tk-idle.sit { animation: hob-sit 5s ease-in-out forwards; }
+@keyframes hob-sit { 0%, 100% { transform: none; } 12%, 85% { transform: translateY(2px) scale(1.06, .8); } }
+.tk-snack { opacity: 0; transform: translate(9px, -16px); }
+.tk-idle.snack .tk-snack { animation: hob-snack 5s ease-in-out forwards; }
+@keyframes hob-snack { 0% { opacity: 0; transform: translate(9px, -12px); } 10% { opacity: 1; transform: translate(9px, -16px); } 25%, 35% { transform: translate(4px, -26px); } 45%, 55% { transform: translate(9px, -18px); } 65%, 75% { transform: translate(4px, -26px); } 88% { opacity: 1; transform: translate(9px, -18px); } 100% { opacity: 0; transform: translate(9px, -16px); } }
+/* new visitors */
+.crow { animation-duration: .22s; }
+.skip { animation: skip .42s ease-in-out infinite alternate; }
+@keyframes skip { from { transform: translateY(0); } to { transform: translateY(-9px); } }
+.fb-wings { animation: fb-flap 1.4s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 40%; }
+@keyframes fb-flap { to { transform: scaleY(.5); } }
+/* silent lightning behind Barad-dûr */
+.lightning .l-sky { opacity: 0; animation: l-sky 1.3s ease-out forwards; }
+@keyframes l-sky { 0% { opacity: 0; } 8% { opacity: .35; } 16% { opacity: .05; } 26% { opacity: .3; } 100% { opacity: 0; } }
+.lightning .l-bolt { opacity: 0; animation: l-bolt 1.3s linear forwards; filter: drop-shadow(0 0 4px #cbb8ff); }
+@keyframes l-bolt { 0% { opacity: 0; } 6%, 12% { opacity: 1; } 16% { opacity: 0; } 24%, 30% { opacity: 1; } 40%, 100% { opacity: 0; } }
+/* a shooting star */
+.star-streak { animation: star 1.4s ease-in forwards; opacity: 0; }
+@keyframes star { 0% { opacity: 0; transform: translate(0, 0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(220px, 82px); } }
+@media (prefers-reduced-motion: reduce) { .tk-moths, .lorien-lights, .lightning { display: none; } }
