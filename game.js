@@ -1333,6 +1333,7 @@
   // Every so often a small group walks across the open ground above the Hobbit Land title.
   // They are only for show and are not part of the game.
   const SIGN_Y = 668;   // feet line, just above the title box
+  const DANCE_Y = 697;  // the dancers' feet land just on top of the title box (its top edge is at 700), as if jumping on it
   // Passers-by are drawn with their feet on the ground at (0,0). Legs and arms swing (classes leg-a / leg-b).
   const SHADOW = (rx) => '<ellipse cx="2" cy="1" rx="' + rx + '" ry="3.5" fill="rgba(40,30,10,.22)"/>';
   // an arm or leg that swings from its top: the limb, plus a hand, boot or foot at its end
@@ -1547,7 +1548,7 @@
       const x = left + (right - left) * i / (n - 1) + (Math.random() * 8 - 4);
       const flip = Math.random() < 0.5 ? -1 : 1;
       const d = (0.55 + Math.random() * 0.35).toFixed(2), dl = (-Math.random()).toFixed(2), r = ((Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 8)).toFixed(1);
-      html += '<g class="dancer" style="animation-delay:' + (i * 0.18 + Math.random() * 0.3).toFixed(2) + 's" transform="translate(' + x.toFixed(1) + ',' + SIGN_Y + ')">' + SHADOW(11) +
+      html += '<g class="dancer" style="animation-delay:' + (i * 0.18 + Math.random() * 0.3).toFixed(2) + 's" transform="translate(' + x.toFixed(1) + ',' + DANCE_Y + ')">' +
         '<g class="dance" style="--d:' + d + 's;--dl:' + dl + 's;--r:' + r + 'deg"><g transform="scale(' + (1.25 * flip) + ',1.25)">' + make() + '</g></g></g>';
     });
     // Anyone already walking past above the title quietly fades away, so no one crosses in front of the dancers.
