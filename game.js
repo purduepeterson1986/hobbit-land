@@ -669,6 +669,7 @@
         await hop(p, next, false);
         guard(g);
         p.trail.push(next);
+        if (NODES[next].stop === 'ungol') p.sawUngol = true;   // Shelob comes out once this turn is over
         updatePlayers();
       }
     } else {
@@ -1885,6 +1886,110 @@
     return 8500;
   }
 
+  /* ---------- Shelob ---------- */
+  // The first time in a game that a hobbit reaches Cirith Ungol, Shelob creeps out of her cave nearby.
+  // The hobbit holds up the Phial of Galadriel, and she shrinks back into the dark. Just for show: play goes on.
+  let shelobDone = false;
+  // Shelob, drawn facing right with her feet on the ground at (0,0): a big round body, long jointed legs, a cluster of eyes.
+  function shelobArt() {
+    const leg = (hx, hy, kx, ky, fx, w) => { const d = 'M' + hx + ',' + hy + ' Q' + kx + ',' + ky + ' ' + fx + ',0';
+      return '<path d="' + d + '" stroke="#7a6452" stroke-width="' + (w + 1.6) + '" fill="none" stroke-linecap="round"/><path d="' + d + '" stroke="#2e231d" stroke-width="' + w + '" fill="none" stroke-linecap="round"/>'; };
+    const far = leg(4, -18, 20, -44, 40, 2.4) + leg(2, -17, 10, -42, 22, 2.4) + leg(-4, -18, -8, -42, -16, 2.4) + leg(-8, -19, -22, -40, -34, 2.4);
+    const near = leg(8, -16, 30, -40, 48, 3.2) + leg(6, -15, 18, -38, 30, 3.2) + leg(-2, -16, -2, -38, -8, 3.2) + leg(-6, -17, -16, -36, -26, 3.2);
+    const eye = (x, y, r) => '<circle cx="' + x + '" cy="' + y + '" r="' + (r * 2.4).toFixed(1) + '" fill="#c8ff7a" opacity=".25"/><circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#d8ff8a"/><circle cx="' + (x + r * 0.3).toFixed(1) + '" cy="' + y + '" r="' + (r * 0.45).toFixed(1) + '" fill="#1a2208"/>';
+    return '<ellipse cx="2" cy="1" rx="44" ry="5" fill="rgba(20,12,8,.3)"/>' +
+      '<g class="sp-legs l">' + far + '</g>' +
+      '<ellipse cx="-16" cy="-26" rx="22" ry="17" fill="#3b2d25" stroke="#8a725e" stroke-width="1.6"/>' +
+      '<path d="M-28,-30 Q-16,-38 -4,-30 M-26,-22 Q-16,-27 -6,-22" stroke="#9a7e62" stroke-width="2" fill="none" stroke-linecap="round" opacity=".85"/>' +
+      '<ellipse cx="-22" cy="-34" rx="7" ry="3.4" fill="#6a5444" opacity=".7"/>' +
+      '<ellipse cx="12" cy="-20" rx="11" ry="9" fill="#43332a" stroke="#8a725e" stroke-width="1.4"/>' +
+      eye(16, -24, 1.7) + eye(20.5, -22.4, 1.7) + eye(13, -20.6, 1.2) + eye(18.4, -18.6, 1.3) + eye(22.4, -18, 1) + eye(15.2, -27, 1) +
+      '<path d="M18,-12.5 q1.4,3.4 -.6,5.4 M21.4,-13 q1.6,3 0,5" stroke="#e8dcc0" stroke-width="1.3" fill="none" stroke-linecap="round"/>' +
+      '<g class="sp-legs r">' + near + '</g>';
+  }
+  // Her cave: a dark mouth in a heap of rock. Feet line at (0,0).
+  function shelobCaveArt() {
+    return '<path d="M-56,3 L-50,-28 L-30,-52 L-4,-60 L24,-54 L46,-34 L56,-8 L58,3 Z" fill="#4a403a" stroke="#2a221d" stroke-width="1.4" stroke-linejoin="round"/>' +
+      '<path d="M-30,-52 L-4,-60 L24,-54 L6,-44 L-18,-42 Z" fill="#5c524a"/>' +
+      '<path d="M-40,-14 L-30,-22 M34,-28 L44,-20 M-12,-50 L2,-48" stroke="#2f2722" stroke-width="1.3" stroke-linecap="round"/>' +
+      '<path d="M-34,3 Q-36,-38 0,-42 Q36,-38 34,3 Z" fill="#120d0b"/>' +
+      '<path d="M-44,-6 Q-38,-26 -30,-34 M44,-8 Q38,-26 30,-34 M-20,-40 L-28,-24 M20,-40 L28,-26" stroke="#d8d2c4" stroke-width=".7" fill="none" opacity=".55"/>';
+  }
+  // A clear spot for the cave near Cirith Ungol, with room in front of it for Shelob to creep out toward the hobbit.
+  function shelobSpot(u, hx) {
+    loadChaseLabels();
+    const free = (x, y) => x > 80 && x < 1520 && y > 120 && y < 885 &&
+      !NODES.some((n) => Math.abs(n.x - x) < 72 && n.y > y - 80 && n.y < y + 34) &&
+      !chaseLabels.some((b) => x + 60 > b.x && x - 60 < b.x + b.width && y + 6 > b.y && y - 64 < b.y + b.height) &&
+      !(x < 470 && y > 640) && !(x > 520 && x < 710 && y > 720);   // the title box and the compass
+    for (let d = 70; d <= 170; d += 12) {
+      for (let k = 0; k < 48; k++) {
+        const a = Math.random() * Math.PI * 2, x = u.x + Math.cos(a) * d, y = u.y + Math.sin(a) * d * 0.8;
+        const dir = hx < x ? -1 : 1;
+        const ex = x + dir * 72;   // where she stops: a smaller clearance, only her own body and legs
+        if (free(x, y) && ex > 70 && ex < 1530 && !NODES.some((n) => Math.abs(n.x - ex) < 46 && n.y > y - 64 && n.y < y + 30)) return { x, y, dir };
+      }
+    }
+    return null;
+  }
+  function shelobScene(p) {
+    if (reduceMotion()) return true;
+    const u = geo.stopNode.ungol;
+    if (!u) return true;
+    const spot = shelobSpot(u, p.x);
+    if (!spot) return false;
+    const { x, y, dir } = spot, reach = 72;
+    const cave = document.createElementNS(SVGNS, 'g');
+    cave.setAttribute('transform', 'translate(' + x.toFixed(1) + ',' + y.toFixed(1) + ')');
+    cave.setAttribute('opacity', '0');
+    // a few eyes glinting in the dark of the cave before she comes out, and after she goes back
+    const glint = [[-8, -22], [-3, -24], [3, -23], [8, -21], [-5, -18], [5, -18]].map((e) =>
+      '<circle cx="' + e[0] + '" cy="' + e[1] + '" r="1.3" fill="#d8ff8a"/>').join('');
+    cave.innerHTML = shelobCaveArt() + '<g class="sh-eyes" opacity="0">' + glint + '</g><g class="sh-spider"><g class="sh-body"></g></g>';
+    const eyes = cave.querySelector('.sh-eyes'), spider = cave.querySelector('.sh-spider'), body = cave.querySelector('.sh-body');
+    body.innerHTML = '<g transform="scale(' + (dir * 1.15) + ',1.15)">' + shelobArt() + '</g>';
+    spider.setAttribute('opacity', '0');
+    layer('critters').appendChild(cave);
+    // the Phial: a little glass vial above the hobbit, blazing with starlight
+    const id = 'phial' + Math.floor(Math.random() * 1e6);
+    const ph = document.createElementNS(SVGNS, 'g');
+    ph.setAttribute('transform', 'translate(' + p.x.toFixed(1) + ',' + (p.y - 50).toFixed(1) + ')');
+    ph.setAttribute('opacity', '0');
+    ph.innerHTML = '<defs><radialGradient id="' + id + '"><stop offset="0" stop-color="#ffffff" stop-opacity=".95"/><stop offset=".35" stop-color="#e6f4ff" stop-opacity=".6"/><stop offset="1" stop-color="#bfe0ff" stop-opacity="0"/></radialGradient></defs>' +
+      '<g class="ph-glow"><circle r="70" fill="url(#' + id + ')"/>' +
+      [0, 1, 2, 3, 4, 5, 6, 7].map((i) => '<path d="M0,-' + (i % 2 ? 30 : 46) + ' L2.4,-12 L-2.4,-12 Z" fill="#ffffff" opacity=".8" transform="rotate(' + i * 45 + ')"/>').join('') + '</g>' +
+      '<path d="M-3,-11 h6 v3 q5,3 5,9 q0,8 -8,8 q-8,0 -8,-8 q0,-6 5,-9 Z" fill="#f4fbff" stroke="#9cc4e4" stroke-width="1"/>' +
+      '<rect x="-3.6" y="-13.4" width="7.2" height="3" rx="1" fill="#c9a24a"/><circle cx="0" cy="1.6" r="3.6" fill="#ffffff"/>';
+    layer('fx').appendChild(ph);
+    const glow = ph.querySelector('.ph-glow');
+    const ease = (k) => (k <= 0 ? 0 : k >= 1 ? 1 : k * k * (3 - 2 * k));
+    let hissed = false, shone = false;
+    scene((t) => {
+      cave.setAttribute('opacity', (t < 0.6 ? t / 0.6 : t > 8.6 ? Math.max(0, 1 - (t - 8.6) / 0.8) : 1).toFixed(2));
+      // eyes in the dark: before she comes out, and again after she goes back in
+      const eo = t < 0.7 ? 0 : t < 1.2 ? (t - 0.7) / 0.5 : t < 1.8 ? 1 : t < 2.2 ? 1 - (t - 1.8) / 0.4 : t < 7.2 ? 0 : t < 7.6 ? (t - 7.2) / 0.4 : t < 8.2 ? 1 : Math.max(0, 1 - (t - 8.2) / 0.3);
+      eyes.setAttribute('opacity', (eo * (Math.sin(t * 9) > 0.92 ? 0.2 : 1)).toFixed(2));   // a quick blink now and then
+      // Shelob creeps out, lifts her front legs, flinches at the light and backs into the cave
+      let k = 0, lift = 0, shake = 0, op = 0;
+      if (t >= 1.6 && t < 4.6) { k = ease((t - 1.6) / 2.6); op = Math.min(1, (t - 1.6) / 0.8); }
+      if (t >= 4.2 && t < 4.9) { k = 1; op = 1; lift = ease((t - 4.2) / 0.4) * 8; }
+      if (t >= 4.9 && t < 5.3) { k = 1; op = 1; lift = 8 * (1 - (t - 4.9) / 0.4); shake = Math.sin(t * 60) * 3; }
+      if (t >= 5.3 && t < 7.3) { k = 1 - ease((t - 5.3) / 2); op = t < 6.5 ? 1 : 1 - (t - 6.5) / 0.8; }
+      if (t >= 1.6 && !hissed) { hissed = true; Sound.noise(0, 0.7, 0.05, 420); }
+      spider.setAttribute('transform', 'translate(' + (dir * reach * k + shake).toFixed(1) + ',0) rotate(' + (-dir * lift).toFixed(1) + ' ' + (-dir * 16) + ' 0)');
+      spider.setAttribute('opacity', Math.max(0, op).toFixed(2));
+      spider.classList.toggle('still', t > 4.2 && t < 5.3);
+      // the Phial blazes up as she rears, shines, and fades once she is gone
+      if (t >= 4.5 && !shone) { shone = true; Sound.rest(); toast(p.name + ' holds up the Phial of Galadriel!', p.h.color, 2200); }
+      const po = t < 4.5 ? 0 : t < 4.9 ? (t - 4.5) / 0.4 : t < 7.6 ? 1 : Math.max(0, 1 - (t - 7.6) / 0.6);
+      ph.setAttribute('opacity', po.toFixed(2));
+      glow.setAttribute('transform', 'scale(' + (Math.min(1, Math.max(0.2, (t - 4.5) / 0.4)) * (1 + 0.08 * Math.sin(t * 7))).toFixed(2) + ') rotate(' + (t * 12).toFixed(1) + ')');
+      return t < 9.5;
+    }, () => { cave.remove(); ph.remove(); });
+    visitorBusyUntil = Math.max(visitorBusyUntil, performance.now() + 9800);   // no other visitor at the same time
+    return true;
+  }
+
   // a deer: a slim, spotted roe deer with little antlers. Drawn facing right, feet at (0,0).
   function deerArt() {
     const coat = '#a8743e', far = '#8a5a2c', hoof = (x) => '<path d="M' + (x - 1.2) + ',-1.6 h2.4 v1.6 h-2.4 Z" fill="#3a2614"/>';
@@ -2272,7 +2377,7 @@
     NODES = geo.nodes;
     START_DIST = geo.startDist;
     renderBoard();
-    playing = true; ringTold = false; awaitingRoll = false; placesGiven = 0; moved = false; turnsSinceVisitor = 0; visitorBusyUntil = 0;
+    playing = true; ringTold = false; shelobDone = false; awaitingRoll = false; placesGiven = 0; moved = false; turnsSinceVisitor = 0; visitorBusyUntil = 0;
     scheduleBirds(gen);
     scheduleWander(gen);
     scheduleWeather(gen, true);
@@ -2370,6 +2475,9 @@
       await move(p, steps, g);
       await afterLanding(p, g, true);
       guard(g);
+      // Reached Cirith Ungol this turn: once any card has been read and moved, Shelob comes out.
+      // Once a game; if there was no room for her cave, the next hobbit to get there sees her.
+      if (p.sawUngol) { p.sawUngol = false; if (!shelobDone && !p.place && shelobScene(p)) shelobDone = true; }
       await scuffle(p, g);
       guard(g);
       endTurn();

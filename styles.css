@@ -394,6 +394,8 @@ h1, h2, p { margin: 0; }
 .sp-thread { animation: sp-thread 8s ease-in-out both; transform-box: fill-box; transform-origin: 50% 0; }
 @keyframes sp-thread { 0%, 8% { transform: scaleY(0); } 34%, 66% { transform: scaleY(1); } 92%, 100% { transform: scaleY(0); } }
 .sp-legs { animation: sp-wiggle .3s ease-in-out infinite alternate; transform-box: fill-box; }
+.sh-spider .sp-legs { animation-duration: .45s; }
+.sh-spider.still .sp-legs { animation-play-state: paused; }
 .sp-legs.l { transform-origin: 100% 40%; }
 .sp-legs.r { transform-origin: 0% 40%; animation-direction: alternate-reverse; }
 @keyframes sp-wiggle { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
