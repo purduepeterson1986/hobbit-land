@@ -481,15 +481,15 @@ h1, h2, p { margin: 0; }
 .wing { animation: flap .32s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
 @keyframes flap { to { transform: scaleY(-.55); } }
 /* Gollum peeking from behind a rock */
-.critter { animation: critter-fade 7s ease forwards; }
-@keyframes critter-fade { 0% { opacity: 0; } 5%, 92% { opacity: 1; } 100% { opacity: 0; } }
-/* about 7 seconds in all: he rises in the first second, watches for nearly 4, fidgets, then ducks down */
-.gollum-peek { animation: peek 7s ease-in-out forwards; }
-@keyframes peek { 0%, 5% { transform: translateY(42px); } 15%, 69% { transform: translateY(0); } 73% { transform: translate(-3px, 1px); } 77%, 83% { transform: translate(3px, 0); } 91%, 100% { transform: translateY(44px); } }
-.g-lid { transform-box: fill-box; transform-origin: 50% 0; animation: blink 7s linear forwards; transform: scaleY(0); }
-@keyframes blink { 0%, 26%, 31%, 45%, 49%, 64%, 68%, 100% { transform: scaleY(0); } 28.5%, 47%, 66% { transform: scaleY(1); } }
-.g-bubble { opacity: 0; animation: g-say 7s ease forwards; }
-@keyframes g-say { 0%, 19% { opacity: 0; transform: translateY(4px); } 24%, 80% { opacity: 1; transform: none; } 87%, 100% { opacity: 0; } }
+.critter { animation: critter-fade 10.5s ease forwards; }
+@keyframes critter-fade { 0% { opacity: 0; } 3.3%, 94.7% { opacity: 1; } 100% { opacity: 0; } }
+/* about 10.5 seconds in all: he rises in the first second, watches for about 7, fidgets, then ducks down */
+.gollum-peek { animation: peek 10.5s ease-in-out forwards; }
+@keyframes peek { 0%, 3.3% { transform: translateY(42px); } 10%, 79.3% { transform: translateY(0); } 82% { transform: translate(-3px, 1px); } 84.7%, 88.7% { transform: translate(3px, 0); } 94%, 100% { transform: translateY(44px); } }
+.g-lid { transform-box: fill-box; transform-origin: 50% 0; animation: blink 10.5s linear forwards; transform: scaleY(0); }
+@keyframes blink { 0%, 17.3%, 20.7%, 30%, 32.7%, 42.7%, 45.3%, 60%, 62.9%, 72.4%, 75.2%, 100% { transform: scaleY(0); } 19%, 31.3%, 44%, 61.4%, 73.8% { transform: scaleY(1); } }
+.g-bubble { opacity: 0; animation: g-say 10.5s ease forwards; }
+@keyframes g-say { 0%, 12.7% { opacity: 0; transform: translateY(4px); } 16%, 86.7% { opacity: 1; transform: none; } 91.3%, 100% { opacity: 0; } }
 .g-say { font-family: var(--serif); font-style: italic; font-weight: 700; font-size: 12px; fill: #4a4636; }
 .dust { fill: rgba(170, 130, 80, .55); animation: dust .65s ease-out forwards; transform-box: fill-box; transform-origin: center; }
 @keyframes dust { to { opacity: 0; transform: translate(var(--dx), -6px) scale(2.2); } }

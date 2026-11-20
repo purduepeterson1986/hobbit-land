@@ -12,7 +12,7 @@
   const SPEED = { hop: 360, think: 1300, pace: 1.35 };
   const STORE_KEY = 'hobbit-land-settings-v1';
   const ORDINALS = ['1st', '2nd', '3rd', '4th'];
-  const MEDALS = ['🥇', '🥈', '🥉', '4'];
+  const MEDALS = ['🥇', '🥈', '🥉', '🏅'];
 
   /* ---------- settings ---------- */
   const settings = {
@@ -1108,7 +1108,7 @@
         '<text x="' + (flip ? -57 : 57) + '" y="-46.5" text-anchor="middle" class="g-say">' + say + '</text></g>' : '');
     layer('critters').appendChild(g);
     setTimeout(() => Sound.gollum(), 500);
-    setTimeout(() => g.remove(), 7200);
+    setTimeout(() => g.remove(), 10700);
     return true;
   }
 
@@ -1117,7 +1117,7 @@
   let turnsSinceVisitor = 0;
   let visitorBusyUntil = 0;
   const VISITORS = [
-    { id: 'gollum', weight: 3, run: () => peekGollum() && 7200 },
+    { id: 'gollum', weight: 3, run: () => peekGollum() && 10700 },
     { id: 'gandalf', weight: 2, run: () => gandalfCart() },
     { id: 'eagle', weight: 2, run: () => eagleFly(960, -70, 1230, 150, 1700, 330, 9, 1) && 9500 },
     { id: 'rider', weight: 2, run: () => { const y = clearLane(800, 616, 392, 110, 860); return y != null && blackRider(800, 616, y); } },
@@ -1128,6 +1128,7 @@
     { id: 'shadowfax', weight: 1, run: () => shadowfax() },
     { id: 'goblin', weight: 2, run: () => goblinChase() },
     { id: 'heroes', weight: 2, run: () => heroChase() },
+    { id: 'gate', weight: 2, run: () => orcMarch() },
     { id: 'eyes', weight: 2, run: () => mirkwoodEyes() },
     { id: 'spider', weight: 2, run: () => mirkwoodSpider() },
     { id: 'forest', weight: 2, run: () => forestVisitor() }
@@ -1750,6 +1751,78 @@
       return t < tStop + 3.7;
     }, () => { orcs.forEach((o) => o.r.g.remove()); heroes.forEach((h) => h.r.g.remove()); });
     return (tStop + 3.9) * 1000;
+  }
+
+  // A band of orcs marches out of the Black Gate and up the map, stops to look about, then marches back into Mordor.
+  // The gate is drawn at the same place on every map; the door is in the middle of it.
+  const GATE = { x: 1361, y: 568 };
+  // A gently curving way up the map from the gate, about len long, clear of the road spaces.
+  // Leaving the gate they pass behind the "Black Gate" name; further on they keep clear of place names too,
+  // so they don't stop to look about right under one.
+  function gatePath(len) {
+    loadChaseLabels();
+    const names = chaseLabels;
+    for (let tries = 0; tries < 200; tries++) {
+      const a0 = -Math.PI / 2 + (Math.random() * 1.2 - 0.6), ph = Math.random() * 6.3;
+      let x = GATE.x, y = GATE.y, ok = true;
+      const pts = [[x, y]];
+      for (let s = 8; s <= len; s += 8) {
+        const a = a0 + 0.3 * Math.sin(s / 45 + ph);
+        x += Math.cos(a) * 8; y += Math.sin(a) * 6;
+        chaseLabels = s < 120 ? [] : names;
+        if (s < 56 ? nearSpace(x, y, 30) : !chaseClear(x, y)) { ok = false; break; }
+        pts.push([x, y]);
+      }
+      if (ok) {
+        chaseLabels = names;
+        const cum = [0];
+        for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+        return { pts, cum, len: cum[cum.length - 1] };
+      }
+    }
+    chaseLabels = names;
+    return null;
+  }
+  function orcMarch() {
+    if (reduceMotion()) return false;
+    const P = gatePath(240) || gatePath(190) || gatePath(150);
+    if (!P) return false;
+    const tOut = 6, tLook = 3.5, gap = 20, v = P.len / tOut;   // about 6 s out, 3.5 s looking about, 6 s back
+    const fwd = pathAt(P, P.len).x - GATE.x < 0 ? -1 : 1;      // which way they face on the way out
+    // The band goes at the bottom of the labels layer: above the night shading, behind the place names.
+    const band = document.createElementNS(SVGNS, 'g');
+    layer('labels').insertBefore(band, layer('labels').firstChild);
+    const orcs = [0, 1, 2, 3, 4].map((i) => {
+      const r = runner(orcArt(0, [1, 0.95, 1, 0.9, 0.97][i], i % 2 === 0), 1);
+      r.g.classList.add('stroll');                // a steady march, not a run
+      band.appendChild(r.g);
+      return { r, i, ph: Math.random() * 0.8, look: 0.55 + Math.random() * 0.35 };
+    });
+    const put = (o, s, face) => {
+      const at = pathAt(P, Math.max(0, s));
+      o.r.g.setAttribute('transform', 'translate(' + at.x.toFixed(1) + ',' + at.y.toFixed(1) + ')');
+      o.r.body.setAttribute('transform', 'scale(' + face + ',1)');
+      o.r.g.setAttribute('opacity', (s <= 0 ? 0 : Math.min(1, s / 18)).toFixed(2));   // they fade in and out at the gate
+    };
+    scene((t) => {
+      orcs.forEach((o) => {
+        const stop = P.len - o.i * gap;
+        if (t < tOut) {
+          put(o, Math.min(v * t - o.i * gap, stop), fwd);
+        } else if (t < tOut + tLook) {
+          o.r.g.classList.add('still');
+          const k = t - tOut;
+          // each looks this way and that in his own time, then turns back toward the gate
+          const face = k > tLook - 0.5 ? -fwd : (k > 0.4 && Math.floor((k + o.ph) / o.look) % 2 ? -fwd : fwd);
+          put(o, stop, face);
+        } else {
+          o.r.g.classList.remove('still');
+          put(o, stop - v * (t - tOut - tLook), -fwd);
+        }
+      });
+      return t < tOut * 2 + tLook + 0.2;
+    }, () => band.remove());
+    return (tOut * 2 + tLook + 0.5) * 1000;
   }
 
   /* ---------- creatures of the forests ---------- */

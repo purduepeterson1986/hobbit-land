@@ -789,6 +789,20 @@
       place('rivendell', -34, 4, elfHouse(22, 18));
       place('rivendell', 6, 2, elfHouse(18, 24));
       place('rivendell', -58, -92, '<path d="M-6,0 Q-8,40 -4,92 L6,92 Q8,40 6,0 Z" fill="#9fd0ec"/><path class="flow" d="M0,0 V92" stroke="#e8f6ff" stroke-width="3" stroke-dasharray="6 7" fill="none"/><ellipse cx="0" cy="94" rx="16" ry="5" fill="#b6def2"/>');
+      if (geo.map === 'serpent' || geo.map === 'southern') {
+        // No hills behind the falls on these two maps, so a little rock crag for the water to spring from.
+        // Drawn just in front of the top of the falls (a slightly lower sort line than the water).
+        place('rivendell', -58, -88, '<g transform="translate(0,-4)">' +
+          '<ellipse cx="-30" cy="6" rx="11" ry="7" fill="#858076" stroke="#5f5a50" stroke-width="1.2"/>' +
+          '<ellipse cx="33" cy="7" rx="9" ry="6" fill="#858076" stroke="#5f5a50" stroke-width="1.2"/>' +
+          '<path d="M-32,8 L-28,-14 L-17,-30 L-4,-37 L10,-33 L23,-22 L31,-6 L34,8 Z" fill="#8f8a80" stroke="#5f5a50" stroke-width="1.4" stroke-linejoin="round"/>' +
+          '<path d="M-17,-30 L-4,-37 L10,-33 L3,-21 L-11,-19 Z" fill="#a8a397"/>' +
+          '<path d="M-22,-4 L-12,-10 M14,-14 L24,-8 M-6,-26 L4,-24" stroke="#6d685e" stroke-width="1.2" stroke-linecap="round"/>' +
+          '<path d="M-8,8 Q-7,-6 0,-11 Q7,-6 8,8 Z" fill="#4a4740"/>' +
+          '<path d="M-5,8 Q-5,-2 0,-6 Q5,-2 5,8 Z" fill="#9fd0ec"/><path class="flow" d="M0,-5 V8" stroke="#e8f6ff" stroke-width="2.4" stroke-dasharray="4 5" fill="none"/>' +
+          '<path d="M18,-27 l-6,9 h3.5 l-5,8 h15 l-5,-8 h3.5 Z" fill="#3f6a3a" stroke="#2c4a28" stroke-width=".8"/><path d="M18,-10 V-6" stroke="#5a3d22" stroke-width="1.6"/>' +
+          '</g>');
+      }
       place('durin', 0, -6, '<path d="M-36,0 L-30,-58 L-6,-74 L22,-66 L34,-40 L36,0 Z" fill="#8f8a80" stroke="#5f5a50" stroke-width="1.4"/>');
       place('durin', 0, -8, '<path d="M-13,0 V-24 Q0,-42 13,-24 V0" fill="#3b3a3f"/><path class="glow" d="M-13,0 V-24 Q0,-42 13,-24 V0 M-9,-26 L9,-26 M0,-34 l-3,6 h6 Z M-10,-6 v-14 M10,-6 v-14" stroke="#cfe7ff" stroke-width="1.4" fill="none"/>', 'glow');
       place('durin', -44, 54, '<ellipse cx="0" cy="0" rx="40" ry="14" fill="#36505e" stroke="#26363f" stroke-width="1.4"/><ellipse cx="-7" cy="-2" rx="28" ry="8" fill="#46687a" opacity=".6"/>');
